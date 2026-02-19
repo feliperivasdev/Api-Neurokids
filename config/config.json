@@ -1,0 +1,41 @@
+{
+  "development": {
+    "username": "Lectorix_DB_owner",
+    "password": "npg_ZtWQ8bPIDXF9",
+    "database": "Lectorix_DB",
+    "host": "ep-red-waterfall-a8ydbv01-pooler.eastus2.azure.neon.tech",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  },
+  "test": {
+    "username": "Lectorix_DB_owner",
+    "password": "npg_ZtWQ8bPIDXF9",
+    "database": "Lectorix_DB",
+    "host": "ep-red-waterfall-a8ydbv01-pooler.eastus2.azure.neon.tech",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  },
+  "production": {
+    "username": "Lectorix_DB_owner",
+    "password": "npg_ZtWQ8bPIDXF9",
+    "database": "Lectorix_DB",
+    "host": "ep-red-waterfall-a8ydbv01-pooler.eastus2.azure.neon.tech",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  }
+}
