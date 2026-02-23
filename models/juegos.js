@@ -98,5 +98,11 @@ module.exports = sequelize => {
     }]
   };
   const JuegosModel = sequelize.define("juegos_model", attributes, options);
+
+  // Associations
+  JuegosModel.associate = models => {
+    JuegosModel.hasMany(models.usuarios_juegos_model, { foreignKey: "juego_id", as: "usuarios_juegos" });
+    JuegosModel.belongsTo(models.niveles_dificultad_model, { foreignKey: "nivel_dificultad_id", as: "nivel_dificultad" });
+  };
   return JuegosModel;
 };

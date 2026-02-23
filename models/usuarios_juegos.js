@@ -111,5 +111,11 @@ module.exports = sequelize => {
     }]
   };
   const UsuariosJuegosModel = sequelize.define("usuarios_juegos_model", attributes, options);
+
+  // Associations
+  UsuariosJuegosModel.associate = models => {
+    UsuariosJuegosModel.belongsTo(models.usuarios_model, { foreignKey: "usuario_id", as: "usuario" });
+    UsuariosJuegosModel.belongsTo(models.juegos_model, { foreignKey: "juego_id", as: "juego" });
+  };
   return UsuariosJuegosModel;
 };

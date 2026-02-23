@@ -98,5 +98,12 @@ module.exports = sequelize => {
     }]
   };
   const LecturasModel = sequelize.define("lecturas_model", attributes, options);
+
+  // Associations
+  LecturasModel.associate = models => {
+    LecturasModel.hasMany(models.usuarios_lecturas_model, { foreignKey: "lectura_id", as: "usuarios_lecturas" });
+    LecturasModel.hasMany(models.preguntas_lectura_model, { foreignKey: "lectura_id", as: "preguntas" });
+    LecturasModel.belongsTo(models.niveles_dificultad_model, { foreignKey: "nivel_dificultad_id", as: "nivel_dificultad" });
+  };
   return LecturasModel;
 };

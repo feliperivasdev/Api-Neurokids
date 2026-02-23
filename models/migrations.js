@@ -37,5 +37,10 @@ module.exports = sequelize => {
     indexes: []
   };
   const MigrationsModel = sequelize.define("migrations_model", attributes, options);
+
+  // Associations
+  MigrationsModel.associate = models => {
+    // No associations
+  };
   return MigrationsModel;
 };

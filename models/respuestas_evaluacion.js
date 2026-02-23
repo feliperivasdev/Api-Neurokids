@@ -63,5 +63,10 @@ module.exports = sequelize => {
     }]
   };
   const RespuestasEvaluacionModel = sequelize.define("respuestas_evaluacion_model", attributes, options);
+
+  // Associations
+  RespuestasEvaluacionModel.associate = models => {
+    RespuestasEvaluacionModel.belongsTo(models.preguntas_evaluacion_model, { foreignKey: "pregunta_id", as: "pregunta" });
+  };
   return RespuestasEvaluacionModel;
 };

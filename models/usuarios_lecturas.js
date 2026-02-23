@@ -111,5 +111,11 @@ module.exports = sequelize => {
     }]
   };
   const UsuariosLecturasModel = sequelize.define("usuarios_lecturas_model", attributes, options);
+
+  // Associations
+  UsuariosLecturasModel.associate = models => {
+    UsuariosLecturasModel.belongsTo(models.usuarios_model, { foreignKey: "usuario_id", as: "usuario" });
+    UsuariosLecturasModel.belongsTo(models.lecturas_model, { foreignKey: "lectura_id", as: "lectura" });
+  };
   return UsuariosLecturasModel;
 };

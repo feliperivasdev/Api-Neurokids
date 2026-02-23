@@ -64,5 +64,10 @@ module.exports = sequelize => {
     indexes: []
   };
   const InstitucionesModel = sequelize.define("instituciones_model", attributes, options);
+
+  // Associations
+  InstitucionesModel.associate = models => {
+    InstitucionesModel.hasMany(models.usuarios_model, { foreignKey: "institucion_id", as: "usuarios" });
+  };
   return InstitucionesModel;
 };

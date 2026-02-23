@@ -63,5 +63,10 @@ module.exports = sequelize => {
     }]
   };
   const RespuestasLecturaModel = sequelize.define("respuestas_lectura_model", attributes, options);
+
+  // Associations
+  RespuestasLecturaModel.associate = models => {
+    RespuestasLecturaModel.belongsTo(models.preguntas_lectura_model, { foreignKey: "pregunta_id", as: "pregunta" });
+  };
   return RespuestasLecturaModel;
 };

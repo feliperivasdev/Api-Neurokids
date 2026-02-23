@@ -141,5 +141,15 @@ module.exports = sequelize => {
     }]
   };
   const UsuariosModel = sequelize.define("usuarios_model", attributes, options);
+
+  // Associations
+  UsuariosModel.associate = models => {
+    UsuariosModel.belongsTo(models.roles_model, { foreignKey: "rol_id", as: "rol" });
+    UsuariosModel.belongsTo(models.instituciones_model, { foreignKey: "institucion_id", as: "institucion" });
+    UsuariosModel.hasMany(models.evaluaciones_usuarios_model, { foreignKey: "usuario_id", as: "evaluaciones_usuarios" });
+    UsuariosModel.hasMany(models.usuarios_insignias_model, { foreignKey: "usuario_id", as: "insignias_usuario" });
+    UsuariosModel.hasMany(models.usuarios_juegos_model, { foreignKey: "usuario_id", as: "juegos_usuario" });
+    UsuariosModel.hasMany(models.usuarios_lecturas_model, { foreignKey: "usuario_id", as: "lecturas_usuario" });
+  };
   return UsuariosModel;
 };

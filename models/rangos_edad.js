@@ -50,5 +50,10 @@ module.exports = sequelize => {
     }]
   };
   const RangosEdadModel = sequelize.define("rangos_edad_model", attributes, options);
+
+  // Associations
+  RangosEdadModel.associate = models => {
+    // Aquí puedes agregar asociaciones si hay modelos relacionados
+  };
   return RangosEdadModel;
 };

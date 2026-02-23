@@ -76,5 +76,11 @@ module.exports = sequelize => {
     }]
   };
   const PreguntasLecturaModel = sequelize.define("preguntas_lectura_model", attributes, options);
+
+  // Associations
+  PreguntasLecturaModel.associate = models => {
+    PreguntasLecturaModel.belongsTo(models.lecturas_model, { foreignKey: "lectura_id", as: "lectura" });
+    PreguntasLecturaModel.hasMany(models.respuestas_lectura_model, { foreignKey: "pregunta_id", as: "respuestas" });
+  };
   return PreguntasLecturaModel;
 };

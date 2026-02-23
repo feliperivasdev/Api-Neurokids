@@ -68,5 +68,10 @@ module.exports = sequelize => {
     }]
   };
   const InsigniasModel = sequelize.define("insignias_model", attributes, options);
+
+  // Associations
+  InsigniasModel.associate = models => {
+    InsigniasModel.hasMany(models.usuarios_insignias_model, { foreignKey: "insignia_id", as: "usuarios_insignias" });
+  };
   return InsigniasModel;
 };

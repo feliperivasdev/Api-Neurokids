@@ -94,5 +94,11 @@ module.exports = sequelize => {
     }]
   };
   const EvaluacionesModel = sequelize.define("evaluaciones_model", attributes, options);
+
+  // Associations
+  EvaluacionesModel.associate = models => {
+    EvaluacionesModel.hasMany(models.evaluaciones_usuarios_model, { foreignKey: "evaluacion_id", as: "usuarios_evaluaciones" });
+    EvaluacionesModel.hasMany(models.preguntas_evaluacion_model, { foreignKey: "evaluacion_id", as: "preguntas" });
+  };
   return EvaluacionesModel;
 };

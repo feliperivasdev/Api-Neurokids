@@ -29,5 +29,10 @@ module.exports = sequelize => {
     indexes: []
   };
   const RolesModel = sequelize.define("roles_model", attributes, options);
+
+  // Associations
+  RolesModel.associate = models => {
+    RolesModel.hasMany(models.usuarios_model, { foreignKey: "rol_id", as: "usuarios" });
+  };
   return RolesModel;
 };

@@ -38,5 +38,11 @@ module.exports = sequelize => {
     indexes: []
   };
   const NivelesDificultadModel = sequelize.define("niveles_dificultad_model", attributes, options);
+
+  // Associations
+  NivelesDificultadModel.associate = models => {
+    NivelesDificultadModel.hasMany(models.juegos_model, { foreignKey: "nivel_dificultad_id", as: "juegos" });
+    NivelesDificultadModel.hasMany(models.lecturas_model, { foreignKey: "nivel_dificultad_id", as: "lecturas" });
+  };
   return NivelesDificultadModel;
 };
