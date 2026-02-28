@@ -116,5 +116,10 @@ module.exports = sequelize => {
     }]
   };
   const CriteriosInsigniasModel = sequelize.define("criterios_insignias_model", attributes, options);
+  CriteriosInsigniasModel.associate = (models) => {
+    CriteriosInsigniasModel.belongsTo(models.insignias_model, { foreignKey: 'insignia_id', as: 'insignia' });
+    CriteriosInsigniasModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    CriteriosInsigniasModel.belongsTo(models.tipos_actividad_model, { foreignKey: 'tipo_actividad_id', as: 'tipoActividad' });
+  };
   return CriteriosInsigniasModel;
 };

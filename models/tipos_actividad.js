@@ -56,5 +56,9 @@ module.exports = sequelize => {
     indexes: []
   };
   const TiposActividadModel = sequelize.define("tipos_actividad_model", attributes, options);
+  TiposActividadModel.associate = (models) => {
+    TiposActividadModel.hasMany(models.actividades_model, { foreignKey: 'tipo_actividad_id', as: 'actividades' });
+    TiposActividadModel.hasMany(models.criterios_insignias_model, { foreignKey: 'tipo_actividad_id', as: 'criterios' });
+  };
   return TiposActividadModel;
 };

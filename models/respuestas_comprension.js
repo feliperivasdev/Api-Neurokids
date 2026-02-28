@@ -130,5 +130,10 @@ module.exports = sequelize => {
     indexes: []
   };
   const RespuestasComprensionModel = sequelize.define("respuestas_comprension_model", attributes, options);
+  RespuestasComprensionModel.associate = (models) => {
+    RespuestasComprensionModel.belongsTo(models.progreso_lecturas_model, { foreignKey: 'progreso_lectura_id', as: 'progreso' });
+    RespuestasComprensionModel.belongsTo(models.preguntas_comprension_lectura_model, { foreignKey: 'pregunta_comprension_id', as: 'pregunta' });
+    RespuestasComprensionModel.belongsTo(models.opciones_comprension_lectura_model, { foreignKey: 'opcion_seleccionada_id', as: 'opcion' });
+  };
   return RespuestasComprensionModel;
 };

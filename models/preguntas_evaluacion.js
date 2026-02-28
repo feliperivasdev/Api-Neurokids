@@ -122,5 +122,10 @@ module.exports = sequelize => {
     indexes: []
   };
   const PreguntasEvaluacionModel = sequelize.define("preguntas_evaluacion_model", attributes, options);
+  PreguntasEvaluacionModel.associate = (models) => {
+    PreguntasEvaluacionModel.belongsTo(models.evaluaciones_iniciales_model, { foreignKey: 'evaluacion_id', as: 'evaluacion' });
+    PreguntasEvaluacionModel.hasMany(models.opciones_respuesta_model, { foreignKey: 'pregunta_id', as: 'opciones' });
+    PreguntasEvaluacionModel.hasMany(models.respuestas_estudiante_model, { foreignKey: 'pregunta_id', as: 'respuestas' });
+  };
   return PreguntasEvaluacionModel;
 };

@@ -142,5 +142,9 @@ module.exports = sequelize => {
     }]
   };
   const ProgresoActividadesModel = sequelize.define("progreso_actividades_model", attributes, options);
+  ProgresoActividadesModel.associate = (models) => {
+    ProgresoActividadesModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    ProgresoActividadesModel.belongsTo(models.actividades_model, { foreignKey: 'actividad_id', as: 'actividad' });
+  };
   return ProgresoActividadesModel;
 };

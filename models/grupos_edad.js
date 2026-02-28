@@ -74,5 +74,12 @@ module.exports = sequelize => {
     indexes: []
   };
   const GruposEdadModel = sequelize.define("grupos_edad_model", attributes, options);
+  GruposEdadModel.associate = (models) => {
+    GruposEdadModel.hasMany(models.actividades_model, { foreignKey: 'grupo_edad_id', as: 'actividades' });
+    GruposEdadModel.hasMany(models.parametros_generacion_lectura_model, { foreignKey: 'grupo_edad_id', as: 'parametros' });
+    GruposEdadModel.hasMany(models.evaluaciones_iniciales_model, { foreignKey: 'grupo_edad_id', as: 'evaluaciones' });
+    GruposEdadModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'grupo_edad_id', as: 'lecturas' });
+    GruposEdadModel.hasMany(models.criterios_insignias_model, { foreignKey: 'grupo_edad_id', as: 'criterios' });
+  };
   return GruposEdadModel;
 };

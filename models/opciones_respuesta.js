@@ -86,5 +86,9 @@ module.exports = sequelize => {
     indexes: []
   };
   const OpcionesRespuestaModel = sequelize.define("opciones_respuesta_model", attributes, options);
+  OpcionesRespuestaModel.associate = (models) => {
+    OpcionesRespuestaModel.belongsTo(models.preguntas_evaluacion_model, { foreignKey: 'pregunta_id', as: 'pregunta' });
+    OpcionesRespuestaModel.hasMany(models.respuestas_estudiante_model, { foreignKey: 'opcion_seleccionada_id', as: 'respuestas' });
+  };
   return OpcionesRespuestaModel;
 };

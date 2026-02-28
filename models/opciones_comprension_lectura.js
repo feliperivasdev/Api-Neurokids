@@ -86,5 +86,9 @@ module.exports = sequelize => {
     indexes: []
   };
   const OpcionesComprensionLecturaModel = sequelize.define("opciones_comprension_lectura_model", attributes, options);
+  OpcionesComprensionLecturaModel.associate = (models) => {
+    OpcionesComprensionLecturaModel.belongsTo(models.preguntas_comprension_lectura_model, { foreignKey: 'pregunta_comprension_id', as: 'pregunta' });
+    OpcionesComprensionLecturaModel.hasMany(models.respuestas_comprension_model, { foreignKey: 'opcion_seleccionada_id', as: 'respuestas' });
+  };
   return OpcionesComprensionLecturaModel;
 };

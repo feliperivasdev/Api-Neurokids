@@ -152,5 +152,11 @@ module.exports = sequelize => {
     }]
   };
   const ActividadesModel = sequelize.define("actividades_model", attributes, options);
+  ActividadesModel.associate = (models) => {
+    ActividadesModel.belongsTo(models.tipos_actividad_model, { foreignKey: 'tipo_actividad_id', as: 'tipo' });
+    ActividadesModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    ActividadesModel.hasMany(models.progreso_actividades_model, { foreignKey: 'actividad_id', as: 'progresos' });
+    ActividadesModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'actividad_origen_id', as: 'insigniasGeneradas' });
+  };
   return ActividadesModel;
 };

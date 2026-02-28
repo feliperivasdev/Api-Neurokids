@@ -125,5 +125,10 @@ module.exports = sequelize => {
     }]
   };
   const FeedbackLecturasIaModel = sequelize.define("feedback_lecturas_ia_model", attributes, options);
+  FeedbackLecturasIaModel.associate = (models) => {
+    FeedbackLecturasIaModel.belongsTo(models.lecturas_generadas_model, { foreignKey: 'lectura_id', as: 'lectura' });
+    FeedbackLecturasIaModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    FeedbackLecturasIaModel.belongsTo(models.usuarios_model, { foreignKey: 'docente_id', as: 'docente' });
+  };
   return FeedbackLecturasIaModel;
 };

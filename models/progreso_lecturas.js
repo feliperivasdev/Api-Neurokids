@@ -143,5 +143,10 @@ module.exports = sequelize => {
     }]
   };
   const ProgresoLecturasModel = sequelize.define("progreso_lecturas_model", attributes, options);
+  ProgresoLecturasModel.associate = (models) => {
+    ProgresoLecturasModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    ProgresoLecturasModel.belongsTo(models.lecturas_generadas_model, { foreignKey: 'lectura_id', as: 'lectura' });
+    ProgresoLecturasModel.hasMany(models.respuestas_comprension_model, { foreignKey: 'progreso_lectura_id', as: 'respuestas' });
+  };
   return ProgresoLecturasModel;
 };

@@ -147,5 +147,10 @@ module.exports = sequelize => {
     }]
   };
   const ResultadosEvaluacionModel = sequelize.define("resultados_evaluacion_model", attributes, options);
+  ResultadosEvaluacionModel.associate = (models) => {
+    ResultadosEvaluacionModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    ResultadosEvaluacionModel.belongsTo(models.evaluaciones_iniciales_model, { foreignKey: 'evaluacion_id', as: 'evaluacion' });
+    ResultadosEvaluacionModel.hasMany(models.respuestas_estudiante_model, { foreignKey: 'resultado_evaluacion_id', as: 'respuestas' });
+  };
   return ResultadosEvaluacionModel;
 };

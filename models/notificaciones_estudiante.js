@@ -134,5 +134,9 @@ module.exports = sequelize => {
     }]
   };
   const NotificacionesEstudianteModel = sequelize.define("notificaciones_estudiante_model", attributes, options);
+  NotificacionesEstudianteModel.associate = (models) => {
+    NotificacionesEstudianteModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    NotificacionesEstudianteModel.belongsTo(models.insignias_model, { foreignKey: 'insignia_relacionada_id', as: 'insignia' });
+  };
   return NotificacionesEstudianteModel;
 };

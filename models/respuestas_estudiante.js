@@ -125,5 +125,10 @@ module.exports = sequelize => {
     }]
   };
   const RespuestasEstudianteModel = sequelize.define("respuestas_estudiante_model", attributes, options);
+  RespuestasEstudianteModel.associate = (models) => {
+    RespuestasEstudianteModel.belongsTo(models.resultados_evaluacion_model, { foreignKey: 'resultado_evaluacion_id', as: 'resultado' });
+    RespuestasEstudianteModel.belongsTo(models.preguntas_evaluacion_model, { foreignKey: 'pregunta_id', as: 'pregunta' });
+    RespuestasEstudianteModel.belongsTo(models.opciones_respuesta_model, { foreignKey: 'opcion_seleccionada_id', as: 'opcion' });
+  };
   return RespuestasEstudianteModel;
 };

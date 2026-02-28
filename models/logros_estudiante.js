@@ -199,5 +199,8 @@ module.exports = sequelize => {
     }]
   };
   const LogrosEstudianteModel = sequelize.define("logros_estudiante_model", attributes, options);
+  LogrosEstudianteModel.associate = (models) => {
+    LogrosEstudianteModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+  };
   return LogrosEstudianteModel;
 };

@@ -98,5 +98,9 @@ module.exports = sequelize => {
     }]
   };
   const TokensAccesoModel = sequelize.define("tokens_acceso_model", attributes, options);
+  TokensAccesoModel.associate = (models) => {
+    TokensAccesoModel.belongsTo(models.usuarios_model, { foreignKey: 'usuario_id', as: 'usuario' });
+    TokensAccesoModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+  };
   return TokensAccesoModel;
 };

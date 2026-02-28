@@ -118,5 +118,10 @@ module.exports = sequelize => {
     indexes: []
   };
   const InsigniasModel = sequelize.define("insignias_model", attributes, options);
+  InsigniasModel.associate = (models) => {
+    InsigniasModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'insignia_id', as: 'estudiantesInsignias' });
+    InsigniasModel.hasMany(models.criterios_insignias_model, { foreignKey: 'insignia_id', as: 'criterios' });
+    InsigniasModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'insignia_relacionada_id', as: 'notificaciones' });
+  };
   return InsigniasModel;
 };

@@ -93,5 +93,9 @@ module.exports = sequelize => {
     }]
   };
   const SesionesModel = sequelize.define("sesiones_model", attributes, options);
+  SesionesModel.associate = (models) => {
+    SesionesModel.belongsTo(models.usuarios_model, { foreignKey: 'usuario_id', as: 'usuario' });
+    SesionesModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+  };
   return SesionesModel;
 };

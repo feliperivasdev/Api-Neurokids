@@ -108,5 +108,10 @@ module.exports = sequelize => {
     }]
   };
   const PreguntasComprensionLecturaModel = sequelize.define("preguntas_comprension_lectura_model", attributes, options);
+  PreguntasComprensionLecturaModel.associate = (models) => {
+    PreguntasComprensionLecturaModel.belongsTo(models.lecturas_generadas_model, { foreignKey: 'lectura_id', as: 'lectura' });
+    PreguntasComprensionLecturaModel.hasMany(models.opciones_comprension_lectura_model, { foreignKey: 'pregunta_comprension_id', as: 'opciones' });
+    PreguntasComprensionLecturaModel.hasMany(models.respuestas_comprension_model, { foreignKey: 'pregunta_comprension_id', as: 'respuestas' });
+  };
   return PreguntasComprensionLecturaModel;
 };

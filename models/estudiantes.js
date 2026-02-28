@@ -126,5 +126,18 @@ module.exports = sequelize => {
     }]
   };
   const EstudiantesModel = sequelize.define("estudiantes_model", attributes, options);
+  EstudiantesModel.associate = (models) => {
+    EstudiantesModel.belongsTo(models.instituciones_model, { foreignKey: 'institucion_id', as: 'institucion' });
+    EstudiantesModel.hasMany(models.tokens_acceso_model, { foreignKey: 'estudiante_id', as: 'tokens' });
+    EstudiantesModel.hasMany(models.sesiones_model, { foreignKey: 'estudiante_id', as: 'sesiones' });
+    EstudiantesModel.hasMany(models.progreso_actividades_model, { foreignKey: 'estudiante_id', as: 'progresoActividades' });
+    EstudiantesModel.hasMany(models.progreso_lecturas_model, { foreignKey: 'estudiante_id', as: 'progresoLecturas' });
+    EstudiantesModel.hasMany(models.resultados_evaluacion_model, { foreignKey: 'estudiante_id', as: 'resultados' });
+    EstudiantesModel.hasMany(models.logros_estudiante_model, { foreignKey: 'estudiante_id', as: 'logros' });
+    EstudiantesModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'estudiante_id', as: 'insignias' });
+    EstudiantesModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'estudiante_id', as: 'notificaciones' });
+    EstudiantesModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'estudiante_id', as: 'lecturas' });
+    EstudiantesModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'estudiante_id', as: 'feedbacksRecibidos' });
+  };
   return EstudiantesModel;
 };

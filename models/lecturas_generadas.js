@@ -227,5 +227,14 @@ module.exports = sequelize => {
     }]
   };
   const LecturasGeneradasModel = sequelize.define("lecturas_generadas_model", attributes, options);
+  LecturasGeneradasModel.associate = (models) => {
+    LecturasGeneradasModel.belongsTo(models.parametros_generacion_lectura_model, { foreignKey: 'parametro_generacion_id', as: 'parametro' });
+    LecturasGeneradasModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    LecturasGeneradasModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    LecturasGeneradasModel.belongsTo(models.usuarios_model, { foreignKey: 'docente_revisor_id', as: 'docenteRevisor' });
+    LecturasGeneradasModel.hasMany(models.progreso_lecturas_model, { foreignKey: 'lectura_id', as: 'progresos' });
+    LecturasGeneradasModel.hasMany(models.preguntas_comprension_lectura_model, { foreignKey: 'lectura_id', as: 'preguntas' });
+    LecturasGeneradasModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'lectura_id', as: 'feedbacks' });
+  };
   return LecturasGeneradasModel;
 };

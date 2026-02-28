@@ -122,5 +122,10 @@ module.exports = sequelize => {
     indexes: []
   };
   const EvaluacionesInicialesModel = sequelize.define("evaluaciones_iniciales_model", attributes, options);
+  EvaluacionesInicialesModel.associate = (models) => {
+    EvaluacionesInicialesModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    EvaluacionesInicialesModel.hasMany(models.preguntas_evaluacion_model, { foreignKey: 'evaluacion_id', as: 'preguntas' });
+    EvaluacionesInicialesModel.hasMany(models.resultados_evaluacion_model, { foreignKey: 'evaluacion_id', as: 'resultados' });
+  };
   return EvaluacionesInicialesModel;
 };

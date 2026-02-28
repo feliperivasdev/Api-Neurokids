@@ -133,5 +133,10 @@ module.exports = sequelize => {
     }]
   };
   const InsigniasEstudianteModel = sequelize.define("insignias_estudiante_model", attributes, options);
+  InsigniasEstudianteModel.associate = (models) => {
+    InsigniasEstudianteModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    InsigniasEstudianteModel.belongsTo(models.insignias_model, { foreignKey: 'insignia_id', as: 'insignia' });
+    InsigniasEstudianteModel.belongsTo(models.actividades_model, { foreignKey: 'actividad_origen_id', as: 'actividad' });
+  };
   return InsigniasEstudianteModel;
 };

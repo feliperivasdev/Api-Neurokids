@@ -131,5 +131,9 @@ module.exports = sequelize => {
     indexes: []
   };
   const ParametrosGeneracionLecturaModel = sequelize.define("parametros_generacion_lectura_model", attributes, options);
+  ParametrosGeneracionLecturaModel.associate = (models) => {
+    ParametrosGeneracionLecturaModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    ParametrosGeneracionLecturaModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'parametro_generacion_id', as: 'lecturas' });
+  };
   return ParametrosGeneracionLecturaModel;
 };
