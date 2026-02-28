@@ -12,85 +12,88 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false,
-      unique: "usuarios_correo_key"
-    },
-    contrasena: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "contrasena",
-      autoIncrement: false
-    },
-    rol_id: {
+    lectura_id: {
       type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "rol_id",
+      field: "lectura_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "roles_model"
+        model: "lecturas_generadas_model"
       }
     },
-    institucion_id: {
+    estudiante_id: {
       type: DataTypes.BIGINT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "institucion_id",
+      field: "estudiante_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "instituciones_model"
+        model: "estudiantes_model"
       }
     },
-    estado: {
+    docente_id: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "docente_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "usuarios_model"
+      }
+    },
+    tipo_feedback: {
+      type: user - defined,
+      allowNull: true,
+      defaultValue: "estudiante",
+      comment: null,
+      primaryKey: false,
+      field: "tipo_feedback",
+      autoIncrement: false
+    },
+    valoracion: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "valoracion",
+      autoIncrement: false
+    },
+    comentarios: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "comentarios",
+      autoIncrement: false
+    },
+    aspectos_mejora: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "aspectos_mejora",
+      autoIncrement: false
+    },
+    usado_para_mejora: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "estado",
-      autoIncrement: false
-    },
-    email_verified_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "email_verified_at",
-      autoIncrement: false
-    },
-    remember_token: {
-      type: DataTypes.CHAR(100),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "remember_token",
+      field: "usado_para_mejora",
       autoIncrement: false
     },
     created_at: {
@@ -113,26 +116,23 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "usuarios",
+    tableName: "feedback_lecturas_ia",
     comment: "",
     indexes: [{
-      name: "idx_usuarios_email",
+      name: "idx_feedback_lectura",
       unique: false,
-      fields: ["correo"]
+      fields: ["lectura_id"]
     }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const UsuariosModel = sequelize.define("usuarios_model", attributes, options);
-  UsuariosModel.associate = (models) => {
-    UsuariosModel.belongsTo(models.roles_model, { foreignKey: 'rol_id', as: 'rol' });
-    UsuariosModel.belongsTo(models.instituciones_model, { foreignKey: 'institucion_id', as: 'institucion' });
-    UsuariosModel.hasMany(models.tokens_acceso_model, { foreignKey: 'usuario_id', as: 'tokens' });
-    UsuariosModel.hasMany(models.sesiones_model, { foreignKey: 'usuario_id', as: 'sesiones' });
-    UsuariosModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'docente_revisor_id', as: 'lecturasRevisadas' });
-    UsuariosModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'docente_id', as: 'feedbacks' });
+  const FeedbackLecturasIaModel = sequelize.define("feedback_lecturas_ia_model", attributes, options);
+  FeedbackLecturasIaModel.associate = (models) => {
+    FeedbackLecturasIaModel.belongsTo(models.lecturas_generadas_model, { foreignKey: 'lectura_id', as: 'lectura' });
+    FeedbackLecturasIaModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    FeedbackLecturasIaModel.belongsTo(models.usuarios_model, { foreignKey: 'docente_id', as: 'docente' });
   };
-  return UsuariosModel;
+  return FeedbackLecturasIaModel;
 };

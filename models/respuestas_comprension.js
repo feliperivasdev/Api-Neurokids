@@ -12,85 +12,97 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
-      type: DataTypes.CHAR(255),
+    progreso_lectura_id: {
+      type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
+      field: "progreso_lectura_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "progreso_lecturas_model"
+      }
     },
-    descripcion: {
+    pregunta_comprension_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "pregunta_comprension_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "preguntas_comprension_lectura_model"
+      }
+    },
+    opcion_seleccionada_id: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "opcion_seleccionada_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "opciones_comprension_lectura_model"
+      }
+    },
+    respuesta_abierta: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "descripcion",
+      field: "respuesta_abierta",
       autoIncrement: false
     },
-    icono: {
+    respuesta_dibujo: {
       type: DataTypes.CHAR(500),
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "icono",
+      field: "respuesta_dibujo",
       autoIncrement: false
     },
-    color_hex: {
-      type: DataTypes.CHAR(7),
-      allowNull: true,
-      defaultValue: "#FFD700",
-      comment: null,
-      primaryKey: false,
-      field: "color_hex",
-      autoIncrement: false
-    },
-    categoria: {
-      type: user - defined,
-      allowNull: true,
-      defaultValue: "progreso",
-      comment: null,
-      primaryKey: false,
-      field: "categoria",
-      autoIncrement: false
-    },
-    rareza: {
-      type: user - defined,
-      allowNull: true,
-      defaultValue: "comun",
-      comment: null,
-      primaryKey: false,
-      field: "rareza",
-      autoIncrement: false
-    },
-    puntos_otorgados: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: "10",
-      comment: null,
-      primaryKey: false,
-      field: "puntos_otorgados",
-      autoIncrement: false
-    },
-    estado: {
+    es_correcta: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "estado",
+      field: "es_correcta",
       autoIncrement: false
     },
-    orden_presentacion: {
+    puntuacion_obtenida: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: "0",
+      comment: null,
+      primaryKey: false,
+      field: "puntuacion_obtenida",
+      autoIncrement: false
+    },
+    tiempo_respuesta: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "tiempo_respuesta",
+      autoIncrement: false
+    },
+    intentos: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: "1",
       comment: null,
       primaryKey: false,
-      field: "orden_presentacion",
+      field: "intentos",
       autoIncrement: false
     },
     created_at: {
@@ -113,7 +125,7 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "insignias",
+    tableName: "respuestas_comprension",
     comment: "",
     indexes: [],
     timestamps: false,
@@ -121,11 +133,11 @@ module.exports = sequelize => {
     freezeTableName: true,
     schema: 'public'
   };
-  const InsigniasModel = sequelize.define("insignias_model", attributes, options);
-  InsigniasModel.associate = (models) => {
-    InsigniasModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'insignia_id', as: 'estudiantesInsignias' });
-    InsigniasModel.hasMany(models.criterios_insignias_model, { foreignKey: 'insignia_id', as: 'criterios' });
-    InsigniasModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'insignia_relacionada_id', as: 'notificaciones' });
+  const RespuestasComprensionModel = sequelize.define("respuestas_comprension_model", attributes, options);
+  RespuestasComprensionModel.associate = (models) => {
+    RespuestasComprensionModel.belongsTo(models.progreso_lecturas_model, { foreignKey: 'progreso_lectura_id', as: 'progreso' });
+    RespuestasComprensionModel.belongsTo(models.preguntas_comprension_lectura_model, { foreignKey: 'pregunta_comprension_id', as: 'pregunta' });
+    RespuestasComprensionModel.belongsTo(models.opciones_comprension_lectura_model, { foreignKey: 'opcion_seleccionada_id', as: 'opcion' });
   };
-  return InsigniasModel;
+  return RespuestasComprensionModel;
 };

@@ -12,49 +12,41 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
+    clave: {
       type: DataTypes.CHAR(255),
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
+      field: "clave",
+      autoIncrement: false,
+      unique: "configuraciones_clave_key"
     },
-    direccion: {
+    valor: {
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "direccion",
+      field: "valor",
       autoIncrement: false
     },
-    telefono: {
-      type: DataTypes.CHAR(20),
+    descripcion: {
+      type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "telefono",
+      field: "descripcion",
       autoIncrement: false
     },
-    correo: {
-      type: DataTypes.CHAR(255),
+    tipo: {
+      type: user - defined,
       allowNull: true,
-      defaultValue: null,
+      defaultValue: "string",
       comment: null,
       primaryKey: false,
-      field: "correo",
-      autoIncrement: false
-    },
-    estado: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "estado",
+      field: "tipo",
       autoIncrement: false
     },
     created_at: {
@@ -77,7 +69,7 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "instituciones",
+    tableName: "configuraciones",
     comment: "",
     indexes: [],
     timestamps: false,
@@ -85,10 +77,6 @@ module.exports = sequelize => {
     freezeTableName: true,
     schema: 'public'
   };
-  const InstitucionesModel = sequelize.define("instituciones_model", attributes, options);
-  InstitucionesModel.associate = (models) => {
-    InstitucionesModel.hasMany(models.usuarios_model, { foreignKey: 'institucion_id', as: 'usuarios' });
-    InstitucionesModel.hasMany(models.estudiantes_model, { foreignKey: 'institucion_id', as: 'estudiantes' });
-  };
-  return InstitucionesModel;
+  const ConfiguracionesModel = sequelize.define("configuraciones_model", attributes, options);
+  return ConfiguracionesModel;
 };

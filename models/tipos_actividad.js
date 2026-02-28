@@ -13,48 +13,22 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     nombre: {
-      type: DataTypes.CHAR(255),
+      type: user - defined,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
       field: "nombre",
-      autoIncrement: false
+      autoIncrement: false,
+      unique: "tipos_actividad_nombre_key"
     },
-    direccion: {
+    descripcion: {
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "direccion",
-      autoIncrement: false
-    },
-    telefono: {
-      type: DataTypes.CHAR(20),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "telefono",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false
-    },
-    estado: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "estado",
+      field: "descripcion",
       autoIncrement: false
     },
     created_at: {
@@ -77,7 +51,7 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "instituciones",
+    tableName: "tipos_actividad",
     comment: "",
     indexes: [],
     timestamps: false,
@@ -85,10 +59,10 @@ module.exports = sequelize => {
     freezeTableName: true,
     schema: 'public'
   };
-  const InstitucionesModel = sequelize.define("instituciones_model", attributes, options);
-  InstitucionesModel.associate = (models) => {
-    InstitucionesModel.hasMany(models.usuarios_model, { foreignKey: 'institucion_id', as: 'usuarios' });
-    InstitucionesModel.hasMany(models.estudiantes_model, { foreignKey: 'institucion_id', as: 'estudiantes' });
+  const TiposActividadModel = sequelize.define("tipos_actividad_model", attributes, options);
+  TiposActividadModel.associate = (models) => {
+    TiposActividadModel.hasMany(models.actividades_model, { foreignKey: 'tipo_actividad_id', as: 'actividades' });
+    TiposActividadModel.hasMany(models.criterios_insignias_model, { foreignKey: 'tipo_actividad_id', as: 'criterios' });
   };
-  return InstitucionesModel;
+  return TiposActividadModel;
 };

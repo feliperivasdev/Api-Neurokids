@@ -23,56 +23,82 @@ module.exports = sequelize => {
     },
     descripcion: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
       field: "descripcion",
       autoIncrement: false
     },
-    icono: {
+    tipo_actividad_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "tipo_actividad_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "tipos_actividad_model"
+      }
+    },
+    grupo_edad_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "grupo_edad_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "grupos_edad_model"
+      }
+    },
+    nivel: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: "1",
+      comment: null,
+      primaryKey: false,
+      field: "nivel",
+      autoIncrement: false
+    },
+    puntuacion_maxima: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: "100",
+      comment: null,
+      primaryKey: false,
+      field: "puntuacion_maxima",
+      autoIncrement: false
+    },
+    tiempo_estimado: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "tiempo_estimado",
+      autoIncrement: false
+    },
+    ruta_recurso: {
       type: DataTypes.CHAR(500),
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "icono",
+      field: "ruta_recurso",
       autoIncrement: false
     },
-    color_hex: {
-      type: DataTypes.CHAR(7),
+    instrucciones: {
+      type: DataTypes.TEXT,
       allowNull: true,
-      defaultValue: "#FFD700",
+      defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "color_hex",
-      autoIncrement: false
-    },
-    categoria: {
-      type: user - defined,
-      allowNull: true,
-      defaultValue: "progreso",
-      comment: null,
-      primaryKey: false,
-      field: "categoria",
-      autoIncrement: false
-    },
-    rareza: {
-      type: user - defined,
-      allowNull: true,
-      defaultValue: "comun",
-      comment: null,
-      primaryKey: false,
-      field: "rareza",
-      autoIncrement: false
-    },
-    puntos_otorgados: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: "10",
-      comment: null,
-      primaryKey: false,
-      field: "puntos_otorgados",
+      field: "instrucciones",
       autoIncrement: false
     },
     estado: {
@@ -113,19 +139,28 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "insignias",
+    tableName: "actividades",
     comment: "",
-    indexes: [],
+    indexes: [{
+      name: "idx_actividades_grupo_edad",
+      unique: false,
+      fields: ["grupo_edad_id"]
+    }, {
+      name: "idx_actividades_tipo",
+      unique: false,
+      fields: ["tipo_actividad_id"]
+    }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const InsigniasModel = sequelize.define("insignias_model", attributes, options);
-  InsigniasModel.associate = (models) => {
-    InsigniasModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'insignia_id', as: 'estudiantesInsignias' });
-    InsigniasModel.hasMany(models.criterios_insignias_model, { foreignKey: 'insignia_id', as: 'criterios' });
-    InsigniasModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'insignia_relacionada_id', as: 'notificaciones' });
+  const ActividadesModel = sequelize.define("actividades_model", attributes, options);
+  ActividadesModel.associate = (models) => {
+    ActividadesModel.belongsTo(models.tipos_actividad_model, { foreignKey: 'tipo_actividad_id', as: 'tipo' });
+    ActividadesModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    ActividadesModel.hasMany(models.progreso_actividades_model, { foreignKey: 'actividad_id', as: 'progresos' });
+    ActividadesModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'actividad_origen_id', as: 'insigniasGeneradas' });
   };
-  return InsigniasModel;
+  return ActividadesModel;
 };

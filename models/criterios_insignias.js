@@ -12,85 +12,79 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false,
-      unique: "usuarios_correo_key"
-    },
-    contrasena: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "contrasena",
-      autoIncrement: false
-    },
-    rol_id: {
+    insignia_id: {
       type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "rol_id",
+      field: "insignia_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "roles_model"
+        model: "insignias_model"
       }
     },
-    institucion_id: {
+    tipo_criterio: {
+      type: user - defined,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "tipo_criterio",
+      autoIncrement: false
+    },
+    valor_requerido: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "valor_requerido",
+      autoIncrement: false
+    },
+    grupo_edad_id: {
       type: DataTypes.BIGINT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "institucion_id",
+      field: "grupo_edad_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "instituciones_model"
+        model: "grupos_edad_model"
       }
     },
-    estado: {
-      type: DataTypes.BOOLEAN,
+    tipo_actividad_id: {
+      type: DataTypes.BIGINT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "estado",
+      field: "tipo_actividad_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "tipos_actividad_model"
+      }
+    },
+    condicion_adicional: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "condicion_adicional",
       autoIncrement: false
     },
-    email_verified_at: {
-      type: DataTypes.DATE,
+    descripcion_criterio: {
+      type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "email_verified_at",
-      autoIncrement: false
-    },
-    remember_token: {
-      type: DataTypes.CHAR(100),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "remember_token",
+      field: "descripcion_criterio",
       autoIncrement: false
     },
     created_at: {
@@ -113,26 +107,23 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "usuarios",
+    tableName: "criterios_insignias",
     comment: "",
     indexes: [{
-      name: "idx_usuarios_email",
+      name: "idx_criterios_insignia",
       unique: false,
-      fields: ["correo"]
+      fields: ["insignia_id"]
     }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const UsuariosModel = sequelize.define("usuarios_model", attributes, options);
-  UsuariosModel.associate = (models) => {
-    UsuariosModel.belongsTo(models.roles_model, { foreignKey: 'rol_id', as: 'rol' });
-    UsuariosModel.belongsTo(models.instituciones_model, { foreignKey: 'institucion_id', as: 'institucion' });
-    UsuariosModel.hasMany(models.tokens_acceso_model, { foreignKey: 'usuario_id', as: 'tokens' });
-    UsuariosModel.hasMany(models.sesiones_model, { foreignKey: 'usuario_id', as: 'sesiones' });
-    UsuariosModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'docente_revisor_id', as: 'lecturasRevisadas' });
-    UsuariosModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'docente_id', as: 'feedbacks' });
+  const CriteriosInsigniasModel = sequelize.define("criterios_insignias_model", attributes, options);
+  CriteriosInsigniasModel.associate = (models) => {
+    CriteriosInsigniasModel.belongsTo(models.insignias_model, { foreignKey: 'insignia_id', as: 'insignia' });
+    CriteriosInsigniasModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    CriteriosInsigniasModel.belongsTo(models.tipos_actividad_model, { foreignKey: 'tipo_actividad_id', as: 'tipoActividad' });
   };
-  return UsuariosModel;
+  return CriteriosInsigniasModel;
 };

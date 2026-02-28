@@ -21,58 +21,80 @@ module.exports = sequelize => {
       field: "nombre",
       autoIncrement: false
     },
-    descripcion: {
-      type: DataTypes.TEXT,
+    grupo_edad_id: {
+      type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "descripcion",
+      field: "grupo_edad_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "grupos_edad_model"
+      }
+    },
+    nivel_lectura: {
+      type: user - defined,
+      allowNull: true,
+      defaultValue: "básico",
+      comment: null,
+      primaryKey: false,
+      field: "nivel_lectura",
       autoIncrement: false
     },
-    icono: {
-      type: DataTypes.CHAR(500),
+    temas_preferidos: {
+      type: DataTypes.JSONB,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "icono",
+      field: "temas_preferidos",
       autoIncrement: false
     },
-    color_hex: {
-      type: DataTypes.CHAR(7),
+    longitud_palabras: {
+      type: DataTypes.CHAR(50),
       allowNull: true,
-      defaultValue: "#FFD700",
+      defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "color_hex",
+      field: "longitud_palabras",
       autoIncrement: false
     },
-    categoria: {
+    tipo_narrativa: {
       type: user - defined,
       allowNull: true,
-      defaultValue: "progreso",
+      defaultValue: "cuento",
       comment: null,
       primaryKey: false,
-      field: "categoria",
+      field: "tipo_narrativa",
       autoIncrement: false
     },
-    rareza: {
+    incluir_imagenes: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "incluir_imagenes",
+      autoIncrement: false
+    },
+    incluir_audio: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "incluir_audio",
+      autoIncrement: false
+    },
+    dificultad_vocabulario: {
       type: user - defined,
       allowNull: true,
-      defaultValue: "comun",
+      defaultValue: "simple",
       comment: null,
       primaryKey: false,
-      field: "rareza",
-      autoIncrement: false
-    },
-    puntos_otorgados: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: "10",
-      comment: null,
-      primaryKey: false,
-      field: "puntos_otorgados",
+      field: "dificultad_vocabulario",
       autoIncrement: false
     },
     estado: {
@@ -82,15 +104,6 @@ module.exports = sequelize => {
       comment: null,
       primaryKey: false,
       field: "estado",
-      autoIncrement: false
-    },
-    orden_presentacion: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: "1",
-      comment: null,
-      primaryKey: false,
-      field: "orden_presentacion",
       autoIncrement: false
     },
     created_at: {
@@ -113,7 +126,7 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "insignias",
+    tableName: "parametros_generacion_lectura",
     comment: "",
     indexes: [],
     timestamps: false,
@@ -121,11 +134,10 @@ module.exports = sequelize => {
     freezeTableName: true,
     schema: 'public'
   };
-  const InsigniasModel = sequelize.define("insignias_model", attributes, options);
-  InsigniasModel.associate = (models) => {
-    InsigniasModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'insignia_id', as: 'estudiantesInsignias' });
-    InsigniasModel.hasMany(models.criterios_insignias_model, { foreignKey: 'insignia_id', as: 'criterios' });
-    InsigniasModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'insignia_relacionada_id', as: 'notificaciones' });
+  const ParametrosGeneracionLecturaModel = sequelize.define("parametros_generacion_lectura_model", attributes, options);
+  ParametrosGeneracionLecturaModel.associate = (models) => {
+    ParametrosGeneracionLecturaModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    ParametrosGeneracionLecturaModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'parametro_generacion_id', as: 'lecturas' });
   };
-  return InsigniasModel;
+  return ParametrosGeneracionLecturaModel;
 };

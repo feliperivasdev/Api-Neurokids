@@ -13,48 +13,40 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     nombre: {
-      type: DataTypes.CHAR(255),
+      type: user - defined,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
       field: "nombre",
+      autoIncrement: false,
+      unique: "grupos_edad_nombre_key"
+    },
+    edad_minima: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "edad_minima",
       autoIncrement: false
     },
-    direccion: {
+    edad_maxima: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "edad_maxima",
+      autoIncrement: false
+    },
+    descripcion: {
       type: DataTypes.TEXT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "direccion",
-      autoIncrement: false
-    },
-    telefono: {
-      type: DataTypes.CHAR(20),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "telefono",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false
-    },
-    estado: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "estado",
+      field: "descripcion",
       autoIncrement: false
     },
     created_at: {
@@ -77,7 +69,7 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "instituciones",
+    tableName: "grupos_edad",
     comment: "",
     indexes: [],
     timestamps: false,
@@ -85,10 +77,13 @@ module.exports = sequelize => {
     freezeTableName: true,
     schema: 'public'
   };
-  const InstitucionesModel = sequelize.define("instituciones_model", attributes, options);
-  InstitucionesModel.associate = (models) => {
-    InstitucionesModel.hasMany(models.usuarios_model, { foreignKey: 'institucion_id', as: 'usuarios' });
-    InstitucionesModel.hasMany(models.estudiantes_model, { foreignKey: 'institucion_id', as: 'estudiantes' });
+  const GruposEdadModel = sequelize.define("grupos_edad_model", attributes, options);
+  GruposEdadModel.associate = (models) => {
+    GruposEdadModel.hasMany(models.actividades_model, { foreignKey: 'grupo_edad_id', as: 'actividades' });
+    GruposEdadModel.hasMany(models.parametros_generacion_lectura_model, { foreignKey: 'grupo_edad_id', as: 'parametros' });
+    GruposEdadModel.hasMany(models.evaluaciones_iniciales_model, { foreignKey: 'grupo_edad_id', as: 'evaluaciones' });
+    GruposEdadModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'grupo_edad_id', as: 'lecturas' });
+    GruposEdadModel.hasMany(models.criterios_insignias_model, { foreignKey: 'grupo_edad_id', as: 'criterios' });
   };
-  return InstitucionesModel;
+  return GruposEdadModel;
 };

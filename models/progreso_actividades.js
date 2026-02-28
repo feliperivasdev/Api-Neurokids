@@ -12,89 +12,93 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    evaluacion_id: {
+    estudiante_id: {
       type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "evaluacion_id",
+      field: "estudiante_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "evaluaciones_iniciales_model"
+        model: "estudiantes_model"
       }
     },
-    pregunta: {
-      type: DataTypes.TEXT,
+    actividad_id: {
+      type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "pregunta",
-      autoIncrement: false
-    },
-    tipo_pregunta: {
-      type: user - defined,
-      allowNull: true,
-      defaultValue: "multiple_choice",
-      comment: null,
-      primaryKey: false,
-      field: "tipo_pregunta",
-      autoIncrement: false
+      field: "actividad_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "actividades_model"
+      }
     },
     puntuacion: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: "1",
+      defaultValue: "0",
       comment: null,
       primaryKey: false,
       field: "puntuacion",
       autoIncrement: false
     },
-    tiempo_respuesta: {
+    puntuacion_maxima: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: null,
+      defaultValue: "100",
       comment: null,
       primaryKey: false,
-      field: "tiempo_respuesta",
+      field: "puntuacion_maxima",
       autoIncrement: false
     },
-    orden_pregunta: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "orden_pregunta",
-      autoIncrement: false
-    },
-    recurso_multimedia: {
-      type: DataTypes.CHAR(500),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "recurso_multimedia",
-      autoIncrement: false
-    },
-    instruccion_especial: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "instruccion_especial",
-      autoIncrement: false
-    },
-    estado: {
+    completado: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "estado",
+      field: "completado",
+      autoIncrement: false
+    },
+    completado_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "completado_at",
+      autoIncrement: false
+    },
+    intentos: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: "0",
+      comment: null,
+      primaryKey: false,
+      field: "intentos",
+      autoIncrement: false
+    },
+    tiempo_total: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: "0",
+      comment: null,
+      primaryKey: false,
+      field: "tiempo_total",
+      autoIncrement: false
+    },
+    ultima_interaccion: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: sequelize.fn('now'),
+      comment: null,
+      primaryKey: false,
+      field: "ultima_interaccion",
       autoIncrement: false
     },
     created_at: {
@@ -117,19 +121,34 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "preguntas_evaluacion",
+    tableName: "progreso_actividades",
     comment: "",
-    indexes: [],
+    indexes: [{
+      name: "idx_progreso_actividad",
+      unique: false,
+      fields: ["actividad_id"]
+    }, {
+      name: "idx_progreso_completado",
+      unique: false,
+      fields: ["completado"]
+    }, {
+      name: "idx_progreso_estudiante",
+      unique: false,
+      fields: ["estudiante_id"]
+    }, {
+      name: "progreso_actividades_estudiante_id_actividad_id_key",
+      unique: true,
+      fields: ["estudiante_id", "actividad_id"]
+    }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const PreguntasEvaluacionModel = sequelize.define("preguntas_evaluacion_model", attributes, options);
-  PreguntasEvaluacionModel.associate = (models) => {
-    PreguntasEvaluacionModel.belongsTo(models.evaluaciones_iniciales_model, { foreignKey: 'evaluacion_id', as: 'evaluacion' });
-    PreguntasEvaluacionModel.hasMany(models.opciones_respuesta_model, { foreignKey: 'pregunta_id', as: 'opciones' });
-    PreguntasEvaluacionModel.hasMany(models.respuestas_estudiante_model, { foreignKey: 'pregunta_id', as: 'respuestas' });
+  const ProgresoActividadesModel = sequelize.define("progreso_actividades_model", attributes, options);
+  ProgresoActividadesModel.associate = (models) => {
+    ProgresoActividadesModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    ProgresoActividadesModel.belongsTo(models.actividades_model, { foreignKey: 'actividad_id', as: 'actividad' });
   };
-  return PreguntasEvaluacionModel;
+  return ProgresoActividadesModel;
 };

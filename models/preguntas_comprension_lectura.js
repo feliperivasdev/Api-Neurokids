@@ -12,85 +12,71 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
-      type: DataTypes.CHAR(255),
+    lectura_id: {
+      type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
+      field: "lectura_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "lecturas_generadas_model"
+      }
     },
-    descripcion: {
+    pregunta: {
       type: DataTypes.TEXT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "descripcion",
+      field: "pregunta",
       autoIncrement: false
     },
-    icono: {
-      type: DataTypes.CHAR(500),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "icono",
-      autoIncrement: false
-    },
-    color_hex: {
-      type: DataTypes.CHAR(7),
-      allowNull: true,
-      defaultValue: "#FFD700",
-      comment: null,
-      primaryKey: false,
-      field: "color_hex",
-      autoIncrement: false
-    },
-    categoria: {
+    tipo_pregunta: {
       type: user - defined,
       allowNull: true,
-      defaultValue: "progreso",
+      defaultValue: "multiple_choice",
       comment: null,
       primaryKey: false,
-      field: "categoria",
+      field: "tipo_pregunta",
       autoIncrement: false
     },
-    rareza: {
+    nivel_dificultad: {
       type: user - defined,
       allowNull: true,
-      defaultValue: "comun",
+      defaultValue: "medio",
       comment: null,
       primaryKey: false,
-      field: "rareza",
+      field: "nivel_dificultad",
       autoIncrement: false
     },
-    puntos_otorgados: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: "10",
-      comment: null,
-      primaryKey: false,
-      field: "puntos_otorgados",
-      autoIncrement: false
-    },
-    estado: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "estado",
-      autoIncrement: false
-    },
-    orden_presentacion: {
+    puntuacion: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: "1",
       comment: null,
       primaryKey: false,
-      field: "orden_presentacion",
+      field: "puntuacion",
+      autoIncrement: false
+    },
+    orden_pregunta: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "orden_pregunta",
+      autoIncrement: false
+    },
+    generada_por_ia: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "generada_por_ia",
       autoIncrement: false
     },
     created_at: {
@@ -113,19 +99,23 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "insignias",
+    tableName: "preguntas_comprension_lectura",
     comment: "",
-    indexes: [],
+    indexes: [{
+      name: "idx_preguntas_lectura",
+      unique: false,
+      fields: ["lectura_id"]
+    }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const InsigniasModel = sequelize.define("insignias_model", attributes, options);
-  InsigniasModel.associate = (models) => {
-    InsigniasModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'insignia_id', as: 'estudiantesInsignias' });
-    InsigniasModel.hasMany(models.criterios_insignias_model, { foreignKey: 'insignia_id', as: 'criterios' });
-    InsigniasModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'insignia_relacionada_id', as: 'notificaciones' });
+  const PreguntasComprensionLecturaModel = sequelize.define("preguntas_comprension_lectura_model", attributes, options);
+  PreguntasComprensionLecturaModel.associate = (models) => {
+    PreguntasComprensionLecturaModel.belongsTo(models.lecturas_generadas_model, { foreignKey: 'lectura_id', as: 'lectura' });
+    PreguntasComprensionLecturaModel.hasMany(models.opciones_comprension_lectura_model, { foreignKey: 'pregunta_comprension_id', as: 'opciones' });
+    PreguntasComprensionLecturaModel.hasMany(models.respuestas_comprension_model, { foreignKey: 'pregunta_comprension_id', as: 'respuestas' });
   };
-  return InsigniasModel;
+  return PreguntasComprensionLecturaModel;
 };

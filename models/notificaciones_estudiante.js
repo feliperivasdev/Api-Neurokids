@@ -12,85 +12,93 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false,
-      unique: "usuarios_correo_key"
-    },
-    contrasena: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "contrasena",
-      autoIncrement: false
-    },
-    rol_id: {
+    estudiante_id: {
       type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "rol_id",
+      field: "estudiante_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "roles_model"
+        model: "estudiantes_model"
       }
     },
-    institucion_id: {
-      type: DataTypes.BIGINT,
+    tipo_notificacion: {
+      type: user - defined,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "tipo_notificacion",
+      autoIncrement: false
+    },
+    titulo: {
+      type: DataTypes.CHAR(255),
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "titulo",
+      autoIncrement: false
+    },
+    mensaje: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "mensaje",
+      autoIncrement: false
+    },
+    icono: {
+      type: DataTypes.CHAR(500),
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "institucion_id",
-      autoIncrement: false,
-      references: {
-        key: "id",
-        model: "instituciones_model"
-      }
+      field: "icono",
+      autoIncrement: false
     },
-    estado: {
+    leida: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "estado",
+      field: "leida",
       autoIncrement: false
     },
-    email_verified_at: {
+    insignia_relacionada_id: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "insignia_relacionada_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "insignias_model"
+      }
+    },
+    prioridad: {
+      type: user - defined,
+      allowNull: true,
+      defaultValue: "media",
+      comment: null,
+      primaryKey: false,
+      field: "prioridad",
+      autoIncrement: false
+    },
+    expires_at: {
       type: DataTypes.DATE,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "email_verified_at",
-      autoIncrement: false
-    },
-    remember_token: {
-      type: DataTypes.CHAR(100),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "remember_token",
+      field: "expires_at",
       autoIncrement: false
     },
     created_at: {
@@ -113,26 +121,26 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "usuarios",
+    tableName: "notificaciones_estudiante",
     comment: "",
     indexes: [{
-      name: "idx_usuarios_email",
+      name: "idx_notificaciones_estudiante",
       unique: false,
-      fields: ["correo"]
+      fields: ["estudiante_id"]
+    }, {
+      name: "idx_notificaciones_leida",
+      unique: false,
+      fields: ["leida"]
     }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const UsuariosModel = sequelize.define("usuarios_model", attributes, options);
-  UsuariosModel.associate = (models) => {
-    UsuariosModel.belongsTo(models.roles_model, { foreignKey: 'rol_id', as: 'rol' });
-    UsuariosModel.belongsTo(models.instituciones_model, { foreignKey: 'institucion_id', as: 'institucion' });
-    UsuariosModel.hasMany(models.tokens_acceso_model, { foreignKey: 'usuario_id', as: 'tokens' });
-    UsuariosModel.hasMany(models.sesiones_model, { foreignKey: 'usuario_id', as: 'sesiones' });
-    UsuariosModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'docente_revisor_id', as: 'lecturasRevisadas' });
-    UsuariosModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'docente_id', as: 'feedbacks' });
+  const NotificacionesEstudianteModel = sequelize.define("notificaciones_estudiante_model", attributes, options);
+  NotificacionesEstudianteModel.associate = (models) => {
+    NotificacionesEstudianteModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
+    NotificacionesEstudianteModel.belongsTo(models.insignias_model, { foreignKey: 'insignia_relacionada_id', as: 'insignia' });
   };
-  return UsuariosModel;
+  return NotificacionesEstudianteModel;
 };

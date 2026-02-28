@@ -12,49 +12,57 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
+    usuario_id: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "usuario_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "usuarios_model"
+      }
+    },
+    estudiante_id: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "estudiante_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "estudiantes_model"
+      }
+    },
+    token_hash: {
       type: DataTypes.CHAR(255),
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "nombre",
+      field: "token_hash",
       autoIncrement: false
     },
-    direccion: {
-      type: DataTypes.TEXT,
+    tipo_token: {
+      type: user - defined,
       allowNull: true,
+      defaultValue: "access",
+      comment: null,
+      primaryKey: false,
+      field: "tipo_token",
+      autoIncrement: false
+    },
+    expires_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "direccion",
-      autoIncrement: false
-    },
-    telefono: {
-      type: DataTypes.CHAR(20),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "telefono",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false
-    },
-    estado: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "estado",
+      field: "expires_at",
       autoIncrement: false
     },
     created_at: {
@@ -77,18 +85,26 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "instituciones",
+    tableName: "tokens_acceso",
     comment: "",
-    indexes: [],
+    indexes: [{
+      name: "idx_tokens_expires",
+      unique: false,
+      fields: ["expires_at"]
+    }, {
+      name: "idx_tokens_hash",
+      unique: false,
+      fields: ["token_hash"]
+    }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const InstitucionesModel = sequelize.define("instituciones_model", attributes, options);
-  InstitucionesModel.associate = (models) => {
-    InstitucionesModel.hasMany(models.usuarios_model, { foreignKey: 'institucion_id', as: 'usuarios' });
-    InstitucionesModel.hasMany(models.estudiantes_model, { foreignKey: 'institucion_id', as: 'estudiantes' });
+  const TokensAccesoModel = sequelize.define("tokens_acceso_model", attributes, options);
+  TokensAccesoModel.associate = (models) => {
+    TokensAccesoModel.belongsTo(models.usuarios_model, { foreignKey: 'usuario_id', as: 'usuario' });
+    TokensAccesoModel.belongsTo(models.estudiantes_model, { foreignKey: 'estudiante_id', as: 'estudiante' });
   };
-  return InstitucionesModel;
+  return TokensAccesoModel;
 };

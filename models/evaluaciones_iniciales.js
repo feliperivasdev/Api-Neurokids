@@ -23,56 +23,60 @@ module.exports = sequelize => {
     },
     descripcion: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
       field: "descripcion",
       autoIncrement: false
     },
-    icono: {
-      type: DataTypes.CHAR(500),
+    grupo_edad_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "grupo_edad_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "grupos_edad_model"
+      }
+    },
+    tiempo_limite: {
+      type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "icono",
+      field: "tiempo_limite",
       autoIncrement: false
     },
-    color_hex: {
-      type: DataTypes.CHAR(7),
-      allowNull: true,
-      defaultValue: "#FFD700",
+    numero_preguntas: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "color_hex",
+      field: "numero_preguntas",
       autoIncrement: false
     },
-    categoria: {
-      type: user - defined,
-      allowNull: true,
-      defaultValue: "progreso",
-      comment: null,
-      primaryKey: false,
-      field: "categoria",
-      autoIncrement: false
-    },
-    rareza: {
-      type: user - defined,
-      allowNull: true,
-      defaultValue: "comun",
-      comment: null,
-      primaryKey: false,
-      field: "rareza",
-      autoIncrement: false
-    },
-    puntos_otorgados: {
+    puntuacion_minima: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: "10",
+      defaultValue: "0",
       comment: null,
       primaryKey: false,
-      field: "puntos_otorgados",
+      field: "puntuacion_minima",
+      autoIncrement: false
+    },
+    puntuacion_maxima: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "puntuacion_maxima",
       autoIncrement: false
     },
     estado: {
@@ -113,7 +117,7 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "insignias",
+    tableName: "evaluaciones_iniciales",
     comment: "",
     indexes: [],
     timestamps: false,
@@ -121,11 +125,11 @@ module.exports = sequelize => {
     freezeTableName: true,
     schema: 'public'
   };
-  const InsigniasModel = sequelize.define("insignias_model", attributes, options);
-  InsigniasModel.associate = (models) => {
-    InsigniasModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'insignia_id', as: 'estudiantesInsignias' });
-    InsigniasModel.hasMany(models.criterios_insignias_model, { foreignKey: 'insignia_id', as: 'criterios' });
-    InsigniasModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'insignia_relacionada_id', as: 'notificaciones' });
+  const EvaluacionesInicialesModel = sequelize.define("evaluaciones_iniciales_model", attributes, options);
+  EvaluacionesInicialesModel.associate = (models) => {
+    EvaluacionesInicialesModel.belongsTo(models.grupos_edad_model, { foreignKey: 'grupo_edad_id', as: 'grupoEdad' });
+    EvaluacionesInicialesModel.hasMany(models.preguntas_evaluacion_model, { foreignKey: 'evaluacion_id', as: 'preguntas' });
+    EvaluacionesInicialesModel.hasMany(models.resultados_evaluacion_model, { foreignKey: 'evaluacion_id', as: 'resultados' });
   };
-  return InsigniasModel;
+  return EvaluacionesInicialesModel;
 };

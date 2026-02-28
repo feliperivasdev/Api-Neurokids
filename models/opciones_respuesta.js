@@ -12,49 +12,53 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
-      type: DataTypes.CHAR(255),
+    pregunta_id: {
+      type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
+      field: "pregunta_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "preguntas_evaluacion_model"
+      }
     },
-    direccion: {
+    texto_opcion: {
       type: DataTypes.TEXT,
-      allowNull: true,
+      allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "direccion",
+      field: "texto_opcion",
       autoIncrement: false
     },
-    telefono: {
-      type: DataTypes.CHAR(20),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "telefono",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: true,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false
-    },
-    estado: {
+    es_correcta: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "estado",
+      field: "es_correcta",
+      autoIncrement: false
+    },
+    orden_opcion: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "orden_opcion",
+      autoIncrement: false
+    },
+    recurso_multimedia: {
+      type: DataTypes.CHAR(500),
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "recurso_multimedia",
       autoIncrement: false
     },
     created_at: {
@@ -77,7 +81,7 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "instituciones",
+    tableName: "opciones_respuesta",
     comment: "",
     indexes: [],
     timestamps: false,
@@ -85,10 +89,10 @@ module.exports = sequelize => {
     freezeTableName: true,
     schema: 'public'
   };
-  const InstitucionesModel = sequelize.define("instituciones_model", attributes, options);
-  InstitucionesModel.associate = (models) => {
-    InstitucionesModel.hasMany(models.usuarios_model, { foreignKey: 'institucion_id', as: 'usuarios' });
-    InstitucionesModel.hasMany(models.estudiantes_model, { foreignKey: 'institucion_id', as: 'estudiantes' });
+  const OpcionesRespuestaModel = sequelize.define("opciones_respuesta_model", attributes, options);
+  OpcionesRespuestaModel.associate = (models) => {
+    OpcionesRespuestaModel.belongsTo(models.preguntas_evaluacion_model, { foreignKey: 'pregunta_id', as: 'pregunta' });
+    OpcionesRespuestaModel.hasMany(models.respuestas_estudiante_model, { foreignKey: 'opcion_seleccionada_id', as: 'respuestas' });
   };
-  return InstitucionesModel;
+  return OpcionesRespuestaModel;
 };

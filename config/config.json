@@ -1,42 +1,47 @@
 {
   "development": {
-    "username": "Lectorix_DB_owner",
-    "password": "npg_ZtWQ8bPIDXF9",
-    "database": "Lectorix_DB",
-    "host": "ep-red-waterfall-a8ydbv01-pooler.eastus2.azure.neon.tech",
+    "username": "neondb_owner",
+    "password": "npg_DTpf2d5tqPCE",
+    "database": "neondb",
+    "host": "ep-ancient-fire-ai6kho7r-pooler.c-4.us-east-1.aws.neon.tech",
     "dialect": "postgres",
+    "ssl": true,
     "dialectOptions": {
       "ssl": {
         "require": true,
         "rejectUnauthorized": false
-      }
+      },
+      "sslmode": "require"
     }
   },
   "test": {
-    "username": "Lectorix_DB_owner",
-    "password": "npg_ZtWQ8bPIDXF9",
-    "database": "Lectorix_DB",
-    "host": "ep-red-waterfall-a8ydbv01-pooler.eastus2.azure.neon.tech",
+    "username": "neondb_owner",
+    "password": "npg_DTpf2d5tqPCE",
+    "database": "neondb",
+    "host": "ep-ancient-fire-ai6kho7r-pooler.c-4.us-east-1.aws.neon.tech",
     "dialect": "postgres",
+    "ssl": true,
     "dialectOptions": {
       "ssl": {
         "require": true,
         "rejectUnauthorized": false
-      }
+      },
+      "sslmode": "require"
     }
   },
   "production": {
-    "username": "Lectorix_DB_owner",
-    "password": "npg_ZtWQ8bPIDXF9",
-    "database": "Lectorix_DB",
-    "host": "ep-red-waterfall-a8ydbv01-pooler.eastus2.azure.neon.tech",
+    "username": "neondb_owner",
+    "password": "npg_DTpf2d5tqPCE",
+    "database": "neondb",
+    "host": "ep-ancient-fire-ai6kho7r-pooler.c-4.us-east-1.aws.neon.tech",
     "dialect": "postgres",
+    "ssl": true,
     "dialectOptions": {
       "ssl": {
         "require": true,
         "rejectUnauthorized": false
-      }
+      },
+      "sslmode": "require"
     }
   }
 }
-

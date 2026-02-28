@@ -12,85 +12,88 @@ module.exports = sequelize => {
       field: "id",
       autoIncrement: false
     },
-    nombre: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "nombre",
-      autoIncrement: false
-    },
-    correo: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "correo",
-      autoIncrement: false,
-      unique: "usuarios_correo_key"
-    },
-    contrasena: {
-      type: DataTypes.CHAR(255),
-      allowNull: false,
-      defaultValue: null,
-      comment: null,
-      primaryKey: false,
-      field: "contrasena",
-      autoIncrement: false
-    },
-    rol_id: {
+    resultado_evaluacion_id: {
       type: DataTypes.BIGINT,
       allowNull: false,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "rol_id",
+      field: "resultado_evaluacion_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "roles_model"
+        model: "resultados_evaluacion_model"
       }
     },
-    institucion_id: {
+    pregunta_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "pregunta_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "preguntas_evaluacion_model"
+      }
+    },
+    opcion_seleccionada_id: {
       type: DataTypes.BIGINT,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "institucion_id",
+      field: "opcion_seleccionada_id",
       autoIncrement: false,
       references: {
         key: "id",
-        model: "instituciones_model"
+        model: "opciones_respuesta_model"
       }
     },
-    estado: {
+    respuesta_texto: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "respuesta_texto",
+      autoIncrement: false
+    },
+    respuesta_audio: {
+      type: DataTypes.CHAR(500),
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "respuesta_audio",
+      autoIncrement: false
+    },
+    es_correcta: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "estado",
+      field: "es_correcta",
       autoIncrement: false
     },
-    email_verified_at: {
-      type: DataTypes.DATE,
+    tiempo_respuesta: {
+      type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
-      field: "email_verified_at",
+      field: "tiempo_respuesta",
       autoIncrement: false
     },
-    remember_token: {
-      type: DataTypes.CHAR(100),
+    intentos: {
+      type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: null,
+      defaultValue: "1",
       comment: null,
       primaryKey: false,
-      field: "remember_token",
+      field: "intentos",
       autoIncrement: false
     },
     created_at: {
@@ -113,26 +116,23 @@ module.exports = sequelize => {
     }
   };
   const options = {
-    tableName: "usuarios",
+    tableName: "respuestas_estudiante",
     comment: "",
     indexes: [{
-      name: "idx_usuarios_email",
+      name: "idx_respuestas_resultado",
       unique: false,
-      fields: ["correo"]
+      fields: ["resultado_evaluacion_id"]
     }],
     timestamps: false,
     underscored: true,
     freezeTableName: true,
     schema: 'public'
   };
-  const UsuariosModel = sequelize.define("usuarios_model", attributes, options);
-  UsuariosModel.associate = (models) => {
-    UsuariosModel.belongsTo(models.roles_model, { foreignKey: 'rol_id', as: 'rol' });
-    UsuariosModel.belongsTo(models.instituciones_model, { foreignKey: 'institucion_id', as: 'institucion' });
-    UsuariosModel.hasMany(models.tokens_acceso_model, { foreignKey: 'usuario_id', as: 'tokens' });
-    UsuariosModel.hasMany(models.sesiones_model, { foreignKey: 'usuario_id', as: 'sesiones' });
-    UsuariosModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'docente_revisor_id', as: 'lecturasRevisadas' });
-    UsuariosModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'docente_id', as: 'feedbacks' });
+  const RespuestasEstudianteModel = sequelize.define("respuestas_estudiante_model", attributes, options);
+  RespuestasEstudianteModel.associate = (models) => {
+    RespuestasEstudianteModel.belongsTo(models.resultados_evaluacion_model, { foreignKey: 'resultado_evaluacion_id', as: 'resultado' });
+    RespuestasEstudianteModel.belongsTo(models.preguntas_evaluacion_model, { foreignKey: 'pregunta_id', as: 'pregunta' });
+    RespuestasEstudianteModel.belongsTo(models.opciones_respuesta_model, { foreignKey: 'opcion_seleccionada_id', as: 'opcion' });
   };
-  return UsuariosModel;
+  return RespuestasEstudianteModel;
 };
