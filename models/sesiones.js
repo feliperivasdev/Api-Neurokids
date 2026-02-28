@@ -90,7 +90,11 @@ module.exports = sequelize => {
       name: "idx_sesiones_usuario",
       unique: false,
       fields: ["usuario_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const SesionesModel = sequelize.define("sesiones_model", attributes, options);
   SesionesModel.associate = (models) => {

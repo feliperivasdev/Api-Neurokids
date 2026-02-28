@@ -83,7 +83,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "opciones_respuesta",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const OpcionesRespuestaModel = sequelize.define("opciones_respuesta_model", attributes, options);
   OpcionesRespuestaModel.associate = (models) => {

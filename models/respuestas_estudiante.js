@@ -122,7 +122,11 @@ module.exports = sequelize => {
       name: "idx_respuestas_resultado",
       unique: false,
       fields: ["resultado_evaluacion_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const RespuestasEstudianteModel = sequelize.define("respuestas_estudiante_model", attributes, options);
   RespuestasEstudianteModel.associate = (models) => {

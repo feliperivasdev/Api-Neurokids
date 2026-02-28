@@ -122,7 +122,11 @@ module.exports = sequelize => {
       name: "idx_feedback_lectura",
       unique: false,
       fields: ["lectura_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const FeedbackLecturasIaModel = sequelize.define("feedback_lecturas_ia_model", attributes, options);
   FeedbackLecturasIaModel.associate = (models) => {

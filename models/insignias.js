@@ -115,7 +115,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "insignias",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const InsigniasModel = sequelize.define("insignias_model", attributes, options);
   InsigniasModel.associate = (models) => {

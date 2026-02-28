@@ -128,7 +128,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "parametros_generacion_lectura",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const ParametrosGeneracionLecturaModel = sequelize.define("parametros_generacion_lectura_model", attributes, options);
   ParametrosGeneracionLecturaModel.associate = (models) => {

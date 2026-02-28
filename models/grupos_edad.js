@@ -71,7 +71,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "grupos_edad",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const GruposEdadModel = sequelize.define("grupos_edad_model", attributes, options);
   GruposEdadModel.associate = (models) => {

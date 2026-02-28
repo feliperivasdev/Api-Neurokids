@@ -131,7 +131,11 @@ module.exports = sequelize => {
       name: "idx_notificaciones_leida",
       unique: false,
       fields: ["leida"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const NotificacionesEstudianteModel = sequelize.define("notificaciones_estudiante_model", attributes, options);
   NotificacionesEstudianteModel.associate = (models) => {

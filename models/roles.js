@@ -53,7 +53,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "roles",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const RolesModel = sequelize.define("roles_model", attributes, options);
   RolesModel.associate = (models) => {

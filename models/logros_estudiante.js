@@ -196,7 +196,11 @@ module.exports = sequelize => {
       name: "idx_logros_estudiante",
       unique: false,
       fields: ["estudiante_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const LogrosEstudianteModel = sequelize.define("logros_estudiante_model", attributes, options);
   LogrosEstudianteModel.associate = (models) => {

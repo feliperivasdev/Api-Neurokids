@@ -95,7 +95,11 @@ module.exports = sequelize => {
       name: "idx_tokens_hash",
       unique: false,
       fields: ["token_hash"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const TokensAccesoModel = sequelize.define("tokens_acceso_model", attributes, options);
   TokensAccesoModel.associate = (models) => {

@@ -140,7 +140,11 @@ module.exports = sequelize => {
       name: "progreso_lecturas_estudiante_id_lectura_id_key",
       unique: true,
       fields: ["estudiante_id", "lectura_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const ProgresoLecturasModel = sequelize.define("progreso_lecturas_model", attributes, options);
   ProgresoLecturasModel.associate = (models) => {

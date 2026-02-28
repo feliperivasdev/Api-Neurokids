@@ -113,7 +113,11 @@ module.exports = sequelize => {
       name: "idx_criterios_insignia",
       unique: false,
       fields: ["insignia_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const CriteriosInsigniasModel = sequelize.define("criterios_insignias_model", attributes, options);
   CriteriosInsigniasModel.associate = (models) => {

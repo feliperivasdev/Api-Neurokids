@@ -83,7 +83,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "opciones_comprension_lectura",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const OpcionesComprensionLecturaModel = sequelize.define("opciones_comprension_lectura_model", attributes, options);
   OpcionesComprensionLecturaModel.associate = (models) => {

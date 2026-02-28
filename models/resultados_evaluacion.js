@@ -144,7 +144,11 @@ module.exports = sequelize => {
       name: "resultados_evaluacion_estudiante_id_evaluacion_id_key",
       unique: true,
       fields: ["estudiante_id", "evaluacion_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const ResultadosEvaluacionModel = sequelize.define("resultados_evaluacion_model", attributes, options);
   ResultadosEvaluacionModel.associate = (models) => {

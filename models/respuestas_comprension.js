@@ -127,7 +127,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "respuestas_comprension",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const RespuestasComprensionModel = sequelize.define("respuestas_comprension_model", attributes, options);
   RespuestasComprensionModel.associate = (models) => {

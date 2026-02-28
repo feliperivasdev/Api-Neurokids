@@ -119,7 +119,11 @@ module.exports = sequelize => {
       name: "idx_usuarios_email",
       unique: false,
       fields: ["correo"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const UsuariosModel = sequelize.define("usuarios_model", attributes, options);
   UsuariosModel.associate = (models) => {

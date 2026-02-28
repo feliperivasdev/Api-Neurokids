@@ -149,7 +149,11 @@ module.exports = sequelize => {
       name: "idx_actividades_tipo",
       unique: false,
       fields: ["tipo_actividad_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const ActividadesModel = sequelize.define("actividades_model", attributes, options);
   ActividadesModel.associate = (models) => {

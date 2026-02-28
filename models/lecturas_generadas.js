@@ -224,7 +224,11 @@ module.exports = sequelize => {
       name: "idx_lecturas_grupo_edad",
       unique: false,
       fields: ["grupo_edad_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const LecturasGeneradasModel = sequelize.define("lecturas_generadas_model", attributes, options);
   LecturasGeneradasModel.associate = (models) => {

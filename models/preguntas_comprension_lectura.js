@@ -105,7 +105,11 @@ module.exports = sequelize => {
       name: "idx_preguntas_lectura",
       unique: false,
       fields: ["lectura_id"]
-    }]
+    }],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const PreguntasComprensionLecturaModel = sequelize.define("preguntas_comprension_lectura_model", attributes, options);
   PreguntasComprensionLecturaModel.associate = (models) => {

@@ -119,7 +119,11 @@ module.exports = sequelize => {
   const options = {
     tableName: "preguntas_evaluacion",
     comment: "",
-    indexes: []
+    indexes: [],
+    timestamps: false,
+    underscored: true,
+    freezeTableName: true,
+    schema: 'public'
   };
   const PreguntasEvaluacionModel = sequelize.define("preguntas_evaluacion_model", attributes, options);
   PreguntasEvaluacionModel.associate = (models) => {
