@@ -8,6 +8,9 @@ const cors = require('cors');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var authRouter = require('./routes/auth');
+var estudiantesRoutes = require('./routes/estudiantesRouter');
+var insignias_estudianteRoutes = require('./routes/insignias_estudianteRouter');
+var notificaciones_estudianteRoutes = require('./routes/notificaciones_estudianteRouter');
 
 var app = express();
 
@@ -27,6 +30,12 @@ app.use('/users', usersRouter);
 
 // Rutas de autenticación
 app.use('/auth', authRouter);
+
+//Rutas varias
+app.use('/estudiantes', estudiantesRoutes);
+app.use('/insignias-estudiante', insignias_estudianteRoutes);
+app.use('/notificaciones-estudiante', notificaciones_estudianteRoutes);
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
