@@ -1,0 +1,47 @@
+{
+  "development": {
+    "username": "neondb_owner",
+    "password": "npg_DTpf2d5tqPCE",
+    "database": "neondb",
+    "host": "ep-ancient-fire-ai6kho7r-pooler.c-4.us-east-1.aws.neon.tech",
+    "dialect": "postgres",
+    "ssl": true,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      },
+      "sslmode": "require"
+    }
+  },
+  "test": {
+    "username": "neondb_owner",
+    "password": "npg_DTpf2d5tqPCE",
+    "database": "neondb",
+    "host": "ep-ancient-fire-ai6kho7r-pooler.c-4.us-east-1.aws.neon.tech",
+    "dialect": "postgres",
+    "ssl": true,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      },
+      "sslmode": "require"
+    }
+  },
+  "production": {
+    "username": "neondb_owner",
+    "password": "npg_DTpf2d5tqPCE",
+    "database": "neondb",
+    "host": "ep-ancient-fire-ai6kho7r-pooler.c-4.us-east-1.aws.neon.tech",
+    "dialect": "postgres",
+    "ssl": true,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      },
+      "sslmode": "require"
+    }
+  }
+}
