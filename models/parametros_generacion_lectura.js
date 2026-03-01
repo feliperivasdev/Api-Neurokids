@@ -35,7 +35,7 @@ module.exports = sequelize => {
       }
     },
     nivel_lectura: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "básico",
       comment: null,
@@ -62,7 +62,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     tipo_narrativa: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "cuento",
       comment: null,
@@ -89,7 +89,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     dificultad_vocabulario: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "simple",
       comment: null,

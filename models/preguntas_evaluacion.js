@@ -35,7 +35,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     tipo_pregunta: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "multiple_choice",
       comment: null,

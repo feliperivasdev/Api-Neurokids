@@ -22,7 +22,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     tipo: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: "diagnostico",
       comment: null,

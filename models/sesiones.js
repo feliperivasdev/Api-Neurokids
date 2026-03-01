@@ -39,7 +39,7 @@ module.exports = sequelize => {
       }
     },
     ip_address: {
-      type: inet,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: null,
       comment: null,

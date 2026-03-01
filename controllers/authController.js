@@ -20,17 +20,28 @@ exports.getInstituciones = async (req, res, next) => {
 
 exports.loginEstudiante = async (req, res, next) => {
     try {
-        const { nombre, institucion_id } = req.body;
+        // Debug logs
+        console.log('--- LOGIN DEBUG ---');
+        console.log('Content-Type:', req.headers['content-type']);
+        console.log('Body completo:', req.body);
+        console.log('Parámetros recibidos:', { 
+            nombre: req.body.nombre, 
+            apellido: req.body.apellido, 
+            institucion_id: req.body.institucion_id 
+        });
+        console.log('--- FIN DEBUG ---');
+
+        const { nombre, apellido, institucion_id } = req.body;
 
         // Validar datos requeridos
-        if (!nombre || !institucion_id) {
+        if (!nombre || !apellido || !institucion_id) {
             return res.status(400).json({
                 success: false,
-                message: 'El nombre e institución son requeridos'
+                message: 'El nombre, apellido e institución son requeridos'
             });
         }
 
-        const resultado = await authService.loginEstudiante(nombre, institucion_id);
+        const resultado = await authService.loginEstudiante(nombre, apellido, institucion_id);
 
         return res.status(200).json({
             success: true,
@@ -65,6 +76,34 @@ exports.getMeEstudiante = async (req, res, next) => {
         });
     } catch (error) {
         console.error('Error en getMeEstudiante:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.registrarEstudiante = async (req, res, next) => {
+    try {
+        const datosEstudiante = req.body;
+
+        // Validar datos básicos requeridos
+        if (!datosEstudiante.nombre || !datosEstudiante.apellido || !datosEstudiante.institucion_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'El nombre, apellido e institución son requeridos'
+            });
+        }
+
+        const resultado = await authService.registrarEstudiante(datosEstudiante);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Cuenta creada exitosamente',
+            data: resultado
+        });
+    } catch (error) {
+        console.error('Error en registrarEstudiante:', error);
         return res.status(400).json({
             success: false,
             message: error.message

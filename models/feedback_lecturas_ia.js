@@ -52,7 +52,7 @@ module.exports = sequelize => {
       }
     },
     tipo_feedback: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "estudiante",
       comment: null,

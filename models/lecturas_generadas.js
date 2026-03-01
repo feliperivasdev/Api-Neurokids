@@ -79,7 +79,7 @@ module.exports = sequelize => {
       }
     },
     nivel_lectura: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "básico",
       comment: null,
@@ -160,7 +160,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     estado: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "generando",
       comment: null,

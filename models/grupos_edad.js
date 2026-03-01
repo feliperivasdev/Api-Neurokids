@@ -13,7 +13,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     nombre: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: null,
       comment: null,

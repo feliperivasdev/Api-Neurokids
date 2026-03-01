@@ -26,7 +26,7 @@ module.exports = sequelize => {
       }
     },
     tipo_notificacion: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: null,
       comment: null,
@@ -84,7 +84,7 @@ module.exports = sequelize => {
       }
     },
     prioridad: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "media",
       comment: null,

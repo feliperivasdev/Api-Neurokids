@@ -10,7 +10,7 @@ module.exports = sequelize => {
       comment: null,
       primaryKey: true,
       field: "id",
-      autoIncrement: false
+      autoIncrement: true
     },
     nombre: {
       type: DataTypes.CHAR(255),
@@ -42,7 +42,7 @@ module.exports = sequelize => {
     },
     edad: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       defaultValue: null,
       comment: null,
       primaryKey: false,
@@ -106,6 +106,19 @@ module.exports = sequelize => {
       primaryKey: false,
       field: "updated_at",
       autoIncrement: false
+    },
+    rol_id: {
+      type: DataTypes.BIGINT,
+      allowNull: false,
+      defaultValue: "3",
+      comment: null,
+      primaryKey: false,
+      field: "rol_id",
+      autoIncrement: false,
+      references: {
+        key: "id",
+        model: "roles_model"
+      }
     }
   };
   const options = {
@@ -132,6 +145,7 @@ module.exports = sequelize => {
   const EstudiantesModel = sequelize.define("estudiantes_model", attributes, options);
   EstudiantesModel.associate = (models) => {
     EstudiantesModel.belongsTo(models.instituciones_model, { foreignKey: 'institucion_id', as: 'institucion' });
+    EstudiantesModel.belongsTo(models.roles_model, { foreignKey: 'rol_id', as: 'rol' });
     EstudiantesModel.hasMany(models.tokens_acceso_model, { foreignKey: 'estudiante_id', as: 'tokens' });
     EstudiantesModel.hasMany(models.sesiones_model, { foreignKey: 'estudiante_id', as: 'sesiones' });
     EstudiantesModel.hasMany(models.progreso_actividades_model, { foreignKey: 'estudiante_id', as: 'progresoActividades' });
@@ -142,6 +156,11 @@ module.exports = sequelize => {
     EstudiantesModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'estudiante_id', as: 'notificaciones' });
     EstudiantesModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'estudiante_id', as: 'lecturas' });
     EstudiantesModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'estudiante_id', as: 'feedbacksRecibidos' });
+    EstudiantesModel.hasMany(models.respuestas_estudiante_model, { foreignKey: 'estudiante_id', as: 'respuestas' });
+    EstudiantesModel.hasMany(models.evaluaciones_usuarios_model, { foreignKey: 'estudiante_id', as: 'evaluacionesUsuario' });
+    EstudiantesModel.hasMany(models.usuarios_insignias_model, { foreignKey: 'estudiante_id', as: 'usuarioInsignias' });
+    EstudiantesModel.hasMany(models.usuarios_juegos_model, { foreignKey: 'estudiante_id', as: 'usuarioJuegos' });
+    EstudiantesModel.hasMany(models.usuarios_lecturas_model, { foreignKey: 'estudiante_id', as: 'usuarioLecturas' });
   };
   return EstudiantesModel;
 };

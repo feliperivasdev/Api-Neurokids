@@ -10,10 +10,10 @@ module.exports = sequelize => {
       comment: null,
       primaryKey: true,
       field: "id",
-      autoIncrement: false
+      autoIncrement: true
     },
     nombre: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: null,
       comment: null,
@@ -62,6 +62,7 @@ module.exports = sequelize => {
   const RolesModel = sequelize.define("roles_model", attributes, options);
   RolesModel.associate = (models) => {
     RolesModel.hasMany(models.usuarios_model, { foreignKey: 'rol_id', as: 'usuarios' });
+    RolesModel.hasMany(models.estudiantes_model, { foreignKey: 'rol_id', as: 'estudiantes' });
   };
   return RolesModel;
 };

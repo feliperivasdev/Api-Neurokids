@@ -10,7 +10,7 @@ module.exports = sequelize => {
       comment: null,
       primaryKey: true,
       field: "id",
-      autoIncrement: false
+      autoIncrement: true
     },
     nombre: {
       type: DataTypes.CHAR(255),
@@ -49,7 +49,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     categoria: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "progreso",
       comment: null,
@@ -58,7 +58,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     rareza: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "comun",
       comment: null,

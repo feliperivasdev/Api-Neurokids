@@ -10,7 +10,7 @@ module.exports = sequelize => {
       comment: null,
       primaryKey: true,
       field: "id",
-      autoIncrement: false
+      autoIncrement: true
     },
     usuario_id: {
       type: DataTypes.BIGINT,
@@ -48,7 +48,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     tipo_token: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "access",
       comment: null,

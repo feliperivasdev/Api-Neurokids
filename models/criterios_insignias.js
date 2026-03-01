@@ -26,7 +26,7 @@ module.exports = sequelize => {
       }
     },
     tipo_criterio: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: null,
       comment: null,

@@ -41,7 +41,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     tipo: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "string",
       comment: null,

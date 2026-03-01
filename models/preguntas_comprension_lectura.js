@@ -35,7 +35,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     tipo_pregunta: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "multiple_choice",
       comment: null,
@@ -44,7 +44,7 @@ module.exports = sequelize => {
       autoIncrement: false
     },
     nivel_dificultad: {
-      type: user - defined,
+      type: DataTypes.STRING,
       allowNull: true,
       defaultValue: "medio",
       comment: null,
