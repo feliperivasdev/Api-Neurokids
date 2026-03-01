@@ -24,10 +24,10 @@ exports.loginEstudiante = async (req, res, next) => {
         console.log('--- LOGIN DEBUG ---');
         console.log('Content-Type:', req.headers['content-type']);
         console.log('Body completo:', req.body);
-        console.log('Parámetros recibidos:', { 
-            nombre: req.body.nombre, 
-            apellido: req.body.apellido, 
-            institucion_id: req.body.institucion_id 
+        console.log('Parámetros recibidos:', {
+            nombre: req.body.nombre,
+            apellido: req.body.apellido,
+            institucion_id: req.body.institucion_id
         });
         console.log('--- FIN DEBUG ---');
 

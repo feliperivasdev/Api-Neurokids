@@ -10,7 +10,7 @@ module.exports = sequelize => {
       comment: null,
       primaryKey: true,
       field: "id",
-      autoIncrement: false
+      autoIncrement: true
     },
     estudiante_id: {
       type: DataTypes.BIGINT,
