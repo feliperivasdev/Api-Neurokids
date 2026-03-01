@@ -11,6 +11,7 @@ var authRouter = require('./routes/auth');
 var estudiantesRoutes = require('./routes/estudiantesRouter');
 var insignias_estudianteRoutes = require('./routes/insignias_estudianteRouter');
 var notificaciones_estudianteRoutes = require('./routes/notificaciones_estudianteRouter');
+var insigniasRoutes = require('./routes/insigniasRouter');
 
 var app = express();
 
@@ -35,6 +36,7 @@ app.use('/auth', authRouter);
 app.use('/estudiantes', estudiantesRoutes);
 app.use('/insignias-estudiante', insignias_estudianteRoutes);
 app.use('/notificaciones-estudiante', notificaciones_estudianteRoutes);
+app.use('/insignias', insigniasRoutes);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
