@@ -5,7 +5,7 @@ const NotificacionesEstudiante = db.notificaciones_estudiante_model;
 exports.getNotificacionesPendientes = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
-        
+
         const notificaciones = await NotificacionesEstudiante.findAll({
             where: {
                 estudiante_id: estudiante_id,
@@ -20,9 +20,9 @@ exports.getNotificacionesPendientes = async (req, res) => {
             total: notificaciones.length
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };
@@ -31,23 +31,23 @@ exports.getNotificacionesPendientes = async (req, res) => {
 exports.marcarTodasComoLeidas = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
-        
+
         const [updatedRows] = await NotificacionesEstudiante.update(
-            { 
-                leida: true, 
-                updated_at: new Date() 
+            {
+                leida: true,
+                updated_at: new Date()
             },
-            { 
-                where: { 
+            {
+                where: {
                     estudiante_id: estudiante_id,
-                    leida: false 
-                } 
+                    leida: false
+                }
             }
         );
 
-        res.status(200).json({ 
-            success: true, 
-            message: `${updatedRows} notificaciones marcadas como leídas` 
+        res.status(200).json({
+            success: true,
+            message: `${updatedRows} notificaciones marcadas como leídas`
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -58,16 +58,16 @@ exports.marcarTodasComoLeidas = async (req, res) => {
 exports.marcarInsigniaBienvenidaLeida = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
-        
+
         await NotificacionesEstudiante.update(
             { leida: true, updated_at: new Date() },
-            { 
-                where: { 
+            {
+                where: {
                     estudiante_id: estudiante_id,
                     tipo_notificacion: 'insignia',
                     insignia_relacionada_id: 14,
                     leida: false
-                } 
+                }
             }
         );
 
