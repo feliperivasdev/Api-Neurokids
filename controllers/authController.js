@@ -127,3 +127,120 @@ exports.logout = async (req, res, next) => {
         });
     }
 };
+
+// ========== CONTROLADORES PARA DOCENTES ==========
+
+exports.registrarDocente = async (req, res, next) => {
+    try {
+        const datosDocente = req.body;
+
+        // Validar datos básicos requeridos
+        if (!datosDocente.nombre || !datosDocente.correo || !datosDocente.contrasena || !datosDocente.institucion_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nombre, correo, contraseña e institución son requeridos'
+            });
+        }
+
+        const resultado = await authService.registrarDocente(datosDocente);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Cuenta de docente creada exitosamente',
+            data: resultado
+        });
+    } catch (error) {
+        console.error('Error en registrarDocente:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.loginDocente = async (req, res, next) => {
+    try {
+        console.log('--- LOGIN DOCENTE DEBUG ---');
+        console.log('Content-Type:', req.headers['content-type']);
+        console.log('Body completo:', req.body);
+        console.log('--- FIN DEBUG ---');
+
+        const { correo, contrasena } = req.body;
+
+        // Validar datos requeridos
+        if (!correo || !contrasena) {
+            return res.status(400).json({
+                success: false,
+                message: 'Correo y contraseña son requeridos'
+            });
+        }
+
+        const resultado = await authService.loginDocente(correo, contrasena);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Sesión de docente iniciada exitosamente',
+            data: resultado
+        });
+    } catch (error) {
+        console.error('Error en loginDocente:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.getMeDocente = async (req, res, next) => {
+    try {
+        const docenteId = req.usuario?.id;
+
+        if (!docenteId) {
+            return res.status(401).json({
+                success: false,
+                message: 'No autorizado'
+            });
+        }
+
+        const docente = await authService.getMeDocente(docenteId);
+
+        return res.status(200).json({
+            success: true,
+            data: docente
+        });
+    } catch (error) {
+        console.error('Error en getMeDocente:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.actualizarPerfilDocente = async (req, res, next) => {
+    try {
+        const docenteId = req.usuario?.id;
+        const datosActualizacion = req.body;
+
+        if (!docenteId) {
+            return res.status(401).json({
+                success: false,
+                message: 'No autorizado'
+            });
+        }
+
+        const resultado = await authService.actualizarPerfilDocente(docenteId, datosActualizacion);
+
+        return res.status(200).json({
+            success: true,
+            message: resultado.message,
+            data: resultado.docente
+        });
+    } catch (error) {
+        console.error('Error en actualizarPerfilDocente:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

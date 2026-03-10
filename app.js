@@ -7,6 +7,7 @@ const cors = require('cors');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var usuariosRouter = require('./routes/usuariosRouter');
 var authRouter = require('./routes/auth');
 var estudiantesRoutes = require('./routes/estudiantesRouter');
 var insignias_estudianteRoutes = require('./routes/insignias_estudianteRouter');
@@ -32,6 +33,9 @@ app.use('/users', usersRouter);
 
 // Rutas de autenticación
 app.use('/auth', authRouter);
+
+// Rutas de usuarios/docentes (CRUD)
+app.use('/usuarios', usuariosRouter);
 
 //Rutas varias
 app.use('/estudiantes', estudiantesRoutes);
