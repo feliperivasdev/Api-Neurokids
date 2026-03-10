@@ -80,11 +80,14 @@ exports.verificarRol = (rolesPermitidos) => {
     };
 };
 
+// Middleware específico para administradores
+exports.verificarAdministrador = exports.verificarRol([1]);
+
 // Middleware específico para docentes
 exports.verificarDocente = exports.verificarRol([2]);
 
 // Middleware específico para estudiantes
-exports.verificarEstudiante = exports.verificarRol([1]);
+exports.verificarEstudiante = exports.verificarRol([3]);
 
-// Middleware para docentes y administradores
-exports.verificarDocenteOAdmin = exports.verificarRol([2, 3]);
+// Middleware para administradores y docentes
+exports.verificarAdminODocente = exports.verificarRol([1, 2]);

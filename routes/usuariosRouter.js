@@ -9,6 +9,7 @@ router.use(verificarToken);
 // Rutas CRUD para usuarios
 router.get('/', usuariosController.obtenerUsuarios);
 router.get('/docentes', usuariosController.obtenerDocentes);
+router.get('/administradores', usuariosController.obtenerAdministradores);
 router.get('/:id', usuariosController.obtenerUsuarioPorId);
 router.post('/', usuariosController.crearUsuario);
 router.put('/:id', usuariosController.actualizarUsuario);

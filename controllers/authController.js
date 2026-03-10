@@ -244,3 +244,120 @@ exports.actualizarPerfilDocente = async (req, res, next) => {
         });
     }
 };
+
+// ========== CONTROLADORES PARA ADMINISTRADORES ==========
+
+exports.registrarAdministrador = async (req, res, next) => {
+    try {
+        const datosAdmin = req.body;
+
+        // Validar datos básicos requeridos
+        if (!datosAdmin.nombre || !datosAdmin.correo || !datosAdmin.contrasena) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nombre, correo y contraseña son requeridos'
+            });
+        }
+
+        const resultado = await authService.registrarAdministrador(datosAdmin);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Cuenta de administrador creada exitosamente',
+            data: resultado
+        });
+    } catch (error) {
+        console.error('Error en registrarAdministrador:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.loginAdministrador = async (req, res, next) => {
+    try {
+        console.log('--- LOGIN ADMINISTRADOR DEBUG ---');
+        console.log('Content-Type:', req.headers['content-type']);
+        console.log('Body completo:', req.body);
+        console.log('--- FIN DEBUG ---');
+
+        const { correo, contrasena } = req.body;
+
+        // Validar datos requeridos
+        if (!correo || !contrasena) {
+            return res.status(400).json({
+                success: false,
+                message: 'Correo y contraseña son requeridos'
+            });
+        }
+
+        const resultado = await authService.loginAdministrador(correo, contrasena);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Sesión de administrador iniciada exitosamente',
+            data: resultado
+        });
+    } catch (error) {
+        console.error('Error en loginAdministrador:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.getMeAdministrador = async (req, res, next) => {
+    try {
+        const adminId = req.usuario?.id;
+
+        if (!adminId) {
+            return res.status(401).json({
+                success: false,
+                message: 'No autorizado'
+            });
+        }
+
+        const administrador = await authService.getMeAdministrador(adminId);
+
+        return res.status(200).json({
+            success: true,
+            data: administrador
+        });
+    } catch (error) {
+        console.error('Error en getMeAdministrador:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+exports.actualizarPerfilAdministrador = async (req, res, next) => {
+    try {
+        const adminId = req.usuario?.id;
+        const datosActualizacion = req.body;
+
+        if (!adminId) {
+            return res.status(401).json({
+                success: false,
+                message: 'No autorizado'
+            });
+        }
+
+        const resultado = await authService.actualizarPerfilAdministrador(adminId, datosActualizacion);
+
+        return res.status(200).json({
+            success: true,
+            message: resultado.message,
+            data: resultado.administrador
+        });
+    } catch (error) {
+        console.error('Error en actualizarPerfilAdministrador:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

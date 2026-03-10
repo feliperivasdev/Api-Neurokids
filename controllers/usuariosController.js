@@ -233,7 +233,7 @@ exports.actualizarUsuario = async (req, res, next) => {
 
             // Verificar que el correo no esté en uso por otro usuario
             const correoExistente = await Usuario.findOne({
-                where: { 
+                where: {
                     correo: correo.trim().toLowerCase(),
                     id: { [db.Sequelize.Op.ne]: id }
                 }
@@ -445,6 +445,61 @@ exports.obtenerDocentes = async (req, res, next) => {
         });
     } catch (error) {
         console.error('Error en obtenerDocentes:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Obtener solo administradores
+exports.obtenerAdministradores = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        const institucion_id = req.query.institucion_id;
+
+        let whereClause = { rol_id: 1 }; // Solo administradores
+        if (institucion_id) {
+            whereClause.institucion_id = institucion_id;
+        }
+
+        const { count, rows: administradores } = await Usuario.findAndCountAll({
+            where: whereClause,
+            include: [
+                {
+                    model: Institucion,
+                    as: 'institucion',
+                    attributes: ['nombre']
+                },
+                {
+                    model: Rol,
+                    as: 'rol',
+                    attributes: ['nombre', 'descripcion']
+                }
+            ],
+            attributes: ['id', 'nombre', 'correo', 'rol_id', 'institucion_id', 'estado', 'created_at', 'email_verified_at'],
+            limit,
+            offset,
+            order: [['created_at', 'DESC']]
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                administradores,
+                pagination: {
+                    current_page: page,
+                    per_page: limit,
+                    total: count,
+                    total_pages: Math.ceil(count / limit)
+                }
+            },
+            message: 'Administradores obtenidos exitosamente'
+        });
+    } catch (error) {
+        console.error('Error en obtenerAdministradores:', error);
         return res.status(500).json({
             success: false,
             message: error.message
