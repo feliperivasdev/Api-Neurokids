@@ -437,7 +437,7 @@ class AuthService {
             const token = this.generateTokenDocente(docente.id);
 
             return {
-                docente: {
+                usuario: {
                     id: docente.id,
                     nombre: docente.nombre,
                     correo: docente.correo,
