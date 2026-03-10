@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const db = require('../models');
 const Estudiante = db.estudiantes_model;
+const Usuario = db.usuarios_model;
 const Institucion = db.instituciones_model;
 const Rol = db.roles_model;
 // Modelos adicionales para logros e insignias
@@ -305,6 +307,545 @@ class AuthService {
     // Logout
     async logout() {
         return { message: 'Sesión cerrada exitosamente' };
+    }
+
+    // ========== MÉTODOS PARA DOCENTES ==========
+
+    // Generar JWT para docentes
+    generateTokenDocente(docenteId) {
+        return jwt.sign(
+            { id: docenteId, role: 'docente' },
+            process.env.JWT_SECRET || 'tu_secreto_jwt',
+            { expiresIn: '7d' }
+        );
+    }
+
+    // Registrar nuevo docente
+    async registrarDocente(datosDocente) {
+        try {
+            const { nombre, correo, contrasena, institucion_id } = datosDocente;
+
+            // Validar datos requeridos
+            if (!nombre?.trim() || !correo?.trim() || !contrasena?.trim() || !institucion_id) {
+                throw new Error('Nombre, correo, contraseña e institución son requeridos');
+            }
+
+            // Validar formato del correo
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo.trim())) {
+                throw new Error('El correo electrónico no tiene un formato válido');
+            }
+
+            // Validar longitud mínima de contraseña
+            if (contrasena.length < 6) {
+                throw new Error('La contraseña debe tener al menos 6 caracteres');
+            }
+
+            // Verificar que la institución existe
+            const institucion = await Institucion.findByPk(institucion_id);
+            if (!institucion) {
+                throw new Error('Institución no encontrada');
+            }
+
+            // Verificar que no exista un usuario con el mismo correo
+            const usuarioExistente = await Usuario.findOne({
+                where: { correo: correo.trim().toLowerCase() }
+            });
+
+            if (usuarioExistente) {
+                throw new Error('Ya existe un usuario registrado con ese correo electrónico');
+            }
+
+            // Encriptar contraseña
+            const saltRounds = 10;
+            const contrasenaHash = await bcrypt.hash(contrasena, saltRounds);
+
+            // Crear el docente (usuario con rol_id = 2)
+            const nuevoDocente = await Usuario.create({
+                nombre: nombre.trim(),
+                correo: correo.trim().toLowerCase(),
+                contrasena: contrasenaHash,
+                rol_id: 2, // Rol de docente
+                institucion_id: institucion_id,
+                estado: true,
+                email_verified_at: new Date() // Marcar como verificado automáticamente
+            });
+
+            // Generar token
+            const token = this.generateTokenDocente(nuevoDocente.id);
+
+            return {
+                docente: {
+                    id: nuevoDocente.id,
+                    nombre: nuevoDocente.nombre,
+                    correo: nuevoDocente.correo,
+                    rol_id: nuevoDocente.rol_id,
+                    institucion_id: nuevoDocente.institucion_id,
+                    institucion: institucion.nombre,
+                    estado: nuevoDocente.estado,
+                    created_at: nuevoDocente.created_at
+                },
+                token,
+                token_type: 'Bearer',
+                expires_in: 604800
+            };
+
+        } catch (error) {
+            throw new Error(`Error en registro de docente: ${error.message}`);
+        }
+    }
+
+    // Iniciar sesión para docentes
+    async loginDocente(correo, contrasena) {
+        try {
+            if (!correo?.trim() || !contrasena?.trim()) {
+                throw new Error('Correo y contraseña son requeridos');
+            }
+
+            // Buscar el docente por correo y rol
+            const docente = await Usuario.findOne({
+                where: {
+                    correo: correo.trim().toLowerCase(),
+                    rol_id: 2, // Solo docentes
+                    estado: true
+                },
+                include: [
+                    {
+                        model: Institucion,
+                        as: 'institucion',
+                        attributes: ['nombre']
+                    },
+                    {
+                        model: Rol,
+                        as: 'rol',
+                        attributes: ['nombre', 'descripcion']
+                    }
+                ]
+            });
+
+            if (!docente) {
+                throw new Error('Credenciales inválidas o cuenta no encontrada');
+            }
+
+            // Verificar contraseña
+            const contrasenaValida = await bcrypt.compare(contrasena, docente.contrasena);
+            if (!contrasenaValida) {
+                throw new Error('Credenciales inválidas');
+            }
+
+            // Generar token
+            const token = this.generateTokenDocente(docente.id);
+
+            return {
+                usuario: {
+                    id: docente.id,
+                    nombre: docente.nombre,
+                    correo: docente.correo,
+                    rol_id: docente.rol_id,
+                    rol: docente.rol?.nombre,
+                    institucion_id: docente.institucion_id,
+                    institucion: docente.institucion?.nombre,
+                    estado: docente.estado,
+                    email_verified_at: docente.email_verified_at
+                },
+                token,
+                token_type: 'Bearer',
+                expires_in: 604800
+            };
+
+        } catch (error) {
+            throw new Error(`Error en login de docente: ${error.message}`);
+        }
+    }
+
+    // Obtener datos del docente actual
+    async getMeDocente(docenteId) {
+        try {
+            const docente = await Usuario.findOne({
+                where: {
+                    id: docenteId,
+                    rol_id: 2, // Solo docentes
+                    estado: true
+                },
+                include: [
+                    {
+                        model: Institucion,
+                        as: 'institucion',
+                        attributes: ['nombre', 'direccion', 'telefono']
+                    },
+                    {
+                        model: Rol,
+                        as: 'rol',
+                        attributes: ['nombre', 'descripcion']
+                    }
+                ],
+                attributes: ['id', 'nombre', 'correo', 'rol_id', 'institucion_id', 'estado', 'created_at', 'email_verified_at']
+            });
+
+            if (!docente) {
+                throw new Error('Docente no encontrado');
+            }
+
+            return docente;
+
+        } catch (error) {
+            throw new Error(`Error al obtener datos del docente: ${error.message}`);
+        }
+    }
+
+    // Actualizar perfil de docente
+    async actualizarPerfilDocente(docenteId, datosActualizacion) {
+        try {
+            const { nombre, correo, contrasena_actual, contrasena_nueva } = datosActualizacion;
+
+            // Buscar el docente
+            const docente = await Usuario.findOne({
+                where: {
+                    id: docenteId,
+                    rol_id: 2,
+                    estado: true
+                }
+            });
+
+            if (!docente) {
+                throw new Error('Docente no encontrado');
+            }
+
+            const datosParaActualizar = {};
+
+            // Actualizar nombre si se proporciona
+            if (nombre && nombre.trim()) {
+                datosParaActualizar.nombre = nombre.trim();
+            }
+
+            // Actualizar correo si se proporciona
+            if (correo && correo.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(correo.trim())) {
+                    throw new Error('El correo electrónico no tiene un formato válido');
+                }
+
+                // Verificar que el correo no esté en uso por otro usuario
+                const correoExistente = await Usuario.findOne({
+                    where: {
+                        correo: correo.trim().toLowerCase(),
+                        id: { [db.Sequelize.Op.ne]: docenteId }
+                    }
+                });
+
+                if (correoExistente) {
+                    throw new Error('Ya existe otro usuario con ese correo electrónico');
+                }
+
+                datosParaActualizar.correo = correo.trim().toLowerCase();
+            }
+
+            // Actualizar contraseña si se proporciona
+            if (contrasena_nueva) {
+                if (!contrasena_actual) {
+                    throw new Error('Se requiere la contraseña actual para cambiar la contraseña');
+                }
+
+                // Verificar contraseña actual
+                const contrasenaValida = await bcrypt.compare(contrasena_actual, docente.contrasena);
+                if (!contrasenaValida) {
+                    throw new Error('La contraseña actual es incorrecta');
+                }
+
+                if (contrasena_nueva.length < 6) {
+                    throw new Error('La nueva contraseña debe tener al menos 6 caracteres');
+                }
+
+                const saltRounds = 10;
+                datosParaActualizar.contrasena = await bcrypt.hash(contrasena_nueva, saltRounds);
+            }
+
+            // Actualizar en la base de datos
+            await docente.update(datosParaActualizar);
+
+            // Retornar datos actualizados
+            const docenteActualizado = await this.getMeDocente(docenteId);
+
+            return {
+                docente: docenteActualizado,
+                message: 'Perfil actualizado exitosamente'
+            };
+
+        } catch (error) {
+            throw new Error(`Error al actualizar perfil: ${error.message}`);
+        }
+    }
+
+    // ========== MÉTODOS PARA ADMINISTRADORES ==========
+
+    // Generar JWT para administradores
+    generateTokenAdmin(adminId) {
+        return jwt.sign(
+            { id: adminId, role: 'admin' },
+            process.env.JWT_SECRET || 'tu_secreto_jwt',
+            { expiresIn: '7d' }
+        );
+    }
+
+    // Registrar nuevo administrador
+    async registrarAdministrador(datosAdmin) {
+        try {
+            const { nombre, correo, contrasena, institucion_id } = datosAdmin;
+
+            // Validar datos requeridos
+            if (!nombre?.trim() || !correo?.trim() || !contrasena?.trim()) {
+                throw new Error('Nombre, correo y contraseña son requeridos');
+            }
+
+            // Validar formato del correo
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo.trim())) {
+                throw new Error('El correo electrónico no tiene un formato válido');
+            }
+
+            // Validar longitud mínima de contraseña
+            if (contrasena.length < 6) {
+                throw new Error('La contraseña debe tener al menos 6 caracteres');
+            }
+
+            // Verificar institución si se proporciona
+            if (institucion_id) {
+                const institucion = await Institucion.findByPk(institucion_id);
+                if (!institucion) {
+                    throw new Error('Institución no encontrada');
+                }
+            }
+
+            // Verificar que no exista un usuario con el mismo correo
+            const usuarioExistente = await Usuario.findOne({
+                where: { correo: correo.trim().toLowerCase() }
+            });
+
+            if (usuarioExistente) {
+                throw new Error('Ya existe un usuario registrado con ese correo electrónico');
+            }
+
+            // Encriptar contraseña
+            const saltRounds = 10;
+            const contrasenaHash = await bcrypt.hash(contrasena, saltRounds);
+
+            // Crear el administrador (usuario con rol_id = 1)
+            const nuevoAdmin = await Usuario.create({
+                nombre: nombre.trim(),
+                correo: correo.trim().toLowerCase(),
+                contrasena: contrasenaHash,
+                rol_id: 1, // Rol de administrador
+                institucion_id: institucion_id || null,
+                estado: true,
+                email_verified_at: new Date() // Marcar como verificado automáticamente
+            });
+
+            // Obtener institución si existe
+            const institucion = institucion_id ? await Institucion.findByPk(institucion_id) : null;
+
+            // Generar token
+            const token = this.generateTokenAdmin(nuevoAdmin.id);
+
+            return {
+                administrador: {
+                    id: nuevoAdmin.id,
+                    nombre: nuevoAdmin.nombre,
+                    correo: nuevoAdmin.correo,
+                    rol_id: nuevoAdmin.rol_id,
+                    institucion_id: nuevoAdmin.institucion_id,
+                    institucion: institucion?.nombre || null,
+                    estado: nuevoAdmin.estado,
+                    created_at: nuevoAdmin.created_at
+                },
+                token,
+                token_type: 'Bearer',
+                expires_in: 604800
+            };
+
+        } catch (error) {
+            throw new Error(`Error en registro de administrador: ${error.message}`);
+        }
+    }
+
+    // Iniciar sesión para administradores
+    async loginAdministrador(correo, contrasena) {
+        try {
+            if (!correo?.trim() || !contrasena?.trim()) {
+                throw new Error('Correo y contraseña son requeridos');
+            }
+
+            // Buscar el administrador por correo y rol
+            const admin = await Usuario.findOne({
+                where: {
+                    correo: correo.trim().toLowerCase(),
+                    rol_id: 1, // Solo administradores
+                    estado: true
+                },
+                include: [
+                    {
+                        model: Institucion,
+                        as: 'institucion',
+                        attributes: ['nombre']
+                    },
+                    {
+                        model: Rol,
+                        as: 'rol',
+                        attributes: ['nombre', 'descripcion']
+                    }
+                ]
+            });
+
+            if (!admin) {
+                throw new Error('Credenciales inválidas o cuenta no encontrada');
+            }
+
+            // Verificar contraseña
+            const contrasenaValida = await bcrypt.compare(contrasena, admin.contrasena);
+            if (!contrasenaValida) {
+                throw new Error('Credenciales inválidas');
+            }
+
+            // Generar token
+            const token = this.generateTokenAdmin(admin.id);
+
+            return {
+                administrador: {
+                    id: admin.id,
+                    nombre: admin.nombre,
+                    correo: admin.correo,
+                    rol_id: admin.rol_id,
+                    rol: admin.rol?.nombre,
+                    institucion_id: admin.institucion_id,
+                    institucion: admin.institucion?.nombre,
+                    estado: admin.estado,
+                    email_verified_at: admin.email_verified_at
+                },
+                token,
+                token_type: 'Bearer',
+                expires_in: 604800
+            };
+
+        } catch (error) {
+            throw new Error(`Error en login de administrador: ${error.message}`);
+        }
+    }
+
+    // Obtener datos del administrador actual
+    async getMeAdministrador(adminId) {
+        try {
+            const admin = await Usuario.findOne({
+                where: {
+                    id: adminId,
+                    rol_id: 1, // Solo administradores
+                    estado: true
+                },
+                include: [
+                    {
+                        model: Institucion,
+                        as: 'institucion',
+                        attributes: ['nombre', 'direccion', 'telefono']
+                    },
+                    {
+                        model: Rol,
+                        as: 'rol',
+                        attributes: ['nombre', 'descripcion']
+                    }
+                ],
+                attributes: ['id', 'nombre', 'correo', 'rol_id', 'institucion_id', 'estado', 'created_at', 'email_verified_at']
+            });
+
+            if (!admin) {
+                throw new Error('Administrador no encontrado');
+            }
+
+            return admin;
+
+        } catch (error) {
+            throw new Error(`Error al obtener datos del administrador: ${error.message}`);
+        }
+    }
+
+    // Actualizar perfil de administrador
+    async actualizarPerfilAdministrador(adminId, datosActualizacion) {
+        try {
+            const { nombre, correo, contrasena_actual, contrasena_nueva } = datosActualizacion;
+
+            // Buscar el administrador
+            const admin = await Usuario.findOne({
+                where: { 
+                    id: adminId, 
+                    rol_id: 1,
+                    estado: true 
+                }
+            });
+
+            if (!admin) {
+                throw new Error('Administrador no encontrado');
+            }
+
+            const datosParaActualizar = {};
+
+            // Actualizar nombre si se proporciona
+            if (nombre && nombre.trim()) {
+                datosParaActualizar.nombre = nombre.trim();
+            }
+
+            // Actualizar correo si se proporciona
+            if (correo && correo.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(correo.trim())) {
+                    throw new Error('El correo electrónico no tiene un formato válido');
+                }
+
+                // Verificar que el correo no esté en uso por otro usuario
+                const correoExistente = await Usuario.findOne({
+                    where: { 
+                        correo: correo.trim().toLowerCase(),
+                        id: { [db.Sequelize.Op.ne]: adminId }
+                    }
+                });
+
+                if (correoExistente) {
+                    throw new Error('Ya existe otro usuario con ese correo electrónico');
+                }
+
+                datosParaActualizar.correo = correo.trim().toLowerCase();
+            }
+
+            // Actualizar contraseña si se proporciona
+            if (contrasena_nueva) {
+                if (!contrasena_actual) {
+                    throw new Error('Se requiere la contraseña actual para cambiar la contraseña');
+                }
+
+                // Verificar contraseña actual
+                const contrasenaValida = await bcrypt.compare(contrasena_actual, admin.contrasena);
+                if (!contrasenaValida) {
+                    throw new Error('La contraseña actual es incorrecta');
+                }
+
+                if (contrasena_nueva.length < 6) {
+                    throw new Error('La nueva contraseña debe tener al menos 6 caracteres');
+                }
+
+                const saltRounds = 10;
+                datosParaActualizar.contrasena = await bcrypt.hash(contrasena_nueva, saltRounds);
+            }
+
+            // Actualizar en la base de datos
+            await admin.update(datosParaActualizar);
+
+            // Retornar datos actualizados
+            const adminActualizado = await this.getMeAdministrador(adminId);
+
+            return {
+                administrador: adminActualizado,
+                message: 'Perfil actualizado exitosamente'
+            };
+
+        } catch (error) {
+            throw new Error(`Error al actualizar perfil: ${error.message}`);
+        }
     }
 }
 

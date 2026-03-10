@@ -139,3 +139,5 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 gen_Contr_Routs.sh
 gen_Contr_Routs.sh
+DOCENTES_API_DOCS.md
+test_docentes_examples.js

@@ -7,11 +7,13 @@ const cors = require('cors');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var usuariosRouter = require('./routes/usuariosRouter');
 var authRouter = require('./routes/auth');
 var estudiantesRoutes = require('./routes/estudiantesRouter');
 var insignias_estudianteRoutes = require('./routes/insignias_estudianteRouter');
 var notificaciones_estudianteRoutes = require('./routes/notificaciones_estudianteRouter');
 var insigniasRoutes = require('./routes/insigniasRouter');
+var progresoActividadesRoutes = require('./routes/progreso_actividadesRouter');
 
 var app = express();
 
@@ -32,19 +34,23 @@ app.use('/users', usersRouter);
 // Rutas de autenticación
 app.use('/auth', authRouter);
 
+// Rutas de usuarios/docentes (CRUD)
+app.use('/usuarios', usuariosRouter);
+
 //Rutas varias
 app.use('/estudiantes', estudiantesRoutes);
 app.use('/insignias-estudiante', insignias_estudianteRoutes);
 app.use('/notificaciones-estudiante', notificaciones_estudianteRoutes);
 app.use('/insignias', insigniasRoutes);
+app.use('/progreso-actividades', progresoActividadesRoutes);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
