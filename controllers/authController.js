@@ -41,7 +41,15 @@ exports.loginEstudiante = async (req, res, next) => {
             });
         }
 
-        const resultado = await authService.loginEstudiante(nombre, apellido, institucion_id);
+        const forwarded = req.headers['x-forwarded-for'];
+        const ipFromHeader = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null;
+        const ip = ipFromHeader || req.ip || req.socket?.remoteAddress || null;
+        const userAgent = req.headers['user-agent'] || null;
+
+        const resultado = await authService.loginEstudiante(nombre, apellido, institucion_id, {
+            ip,
+            userAgent
+        });
 
         return res.status(200).json({
             success: true,

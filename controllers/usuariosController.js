@@ -4,6 +4,21 @@ const Institucion = db.instituciones_model;
 const Rol = db.roles_model;
 const bcrypt = require('bcrypt');
 
+async function getRolIdByNombre(nombreRol) {
+    // Primero intentar coincidencia exacta por nombre
+    let rol = await Rol.findOne({
+        where: { nombre: nombreRol },
+        attributes: ['id', 'nombre']
+    });
+
+    if (rol) return rol.id;
+
+    // Fallback: comparar en memoria ignorando mayúsculas/minúsculas
+    const todos = await Rol.findAll({ attributes: ['id', 'nombre'] });
+    const match = todos.find(r => r.nombre?.toLowerCase() === nombreRol.trim().toLowerCase());
+    return match?.id || null;
+}
+
 // Obtener todos los usuarios (con paginación)
 exports.obtenerUsuarios = async (req, res, next) => {
     try {
@@ -405,7 +420,16 @@ exports.obtenerDocentes = async (req, res, next) => {
         const offset = (page - 1) * limit;
         const institucion_id = req.query.institucion_id;
 
-        let whereClause = { rol_id: 2 }; // Solo docentes
+        // Resolver el rol "docente" desde DB para no depender de IDs fijos
+        const docenteRolId = await getRolIdByNombre('docente');
+        if (!docenteRolId) {
+            return res.status(500).json({
+                success: false,
+                message: 'Rol Docente no encontrado en la base de datos'
+            });
+        }
+
+        let whereClause = { rol_id: docenteRolId };
         if (institucion_id) {
             whereClause.institucion_id = institucion_id;
         }
@@ -445,6 +469,87 @@ exports.obtenerDocentes = async (req, res, next) => {
         });
     } catch (error) {
         console.error('Error en obtenerDocentes:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Crear docente (administrativo) sin depender de rol_id fijo
+exports.crearDocente = async (req, res, next) => {
+    try {
+        const { nombre, correo, contrasena, institucion_id } = req.body;
+
+        if (!nombre || !correo || !contrasena || !institucion_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nombre, correo, contraseña e institución son requeridos'
+            });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(correo.trim())) {
+            return res.status(400).json({
+                success: false,
+                message: 'El correo electrónico no tiene un formato válido'
+            });
+        }
+
+        const usuarioExistente = await Usuario.findOne({
+            where: { correo: correo.trim().toLowerCase() }
+        });
+        if (usuarioExistente) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ya existe un usuario registrado con ese correo electrónico'
+            });
+        }
+
+        const institucion = await Institucion.findByPk(institucion_id);
+        if (!institucion) {
+            return res.status(400).json({
+                success: false,
+                message: 'Institución no encontrada'
+            });
+        }
+
+        const docenteRolId = await getRolIdByNombre('docente');
+        if (!docenteRolId) {
+            return res.status(500).json({
+                success: false,
+                message: 'Rol Docente no encontrado en la base de datos'
+            });
+        }
+
+        const saltRounds = 10;
+        const contrasenaHash = await bcrypt.hash(contrasena, saltRounds);
+
+        const nuevoDocente = await Usuario.create({
+            nombre: nombre.trim(),
+            correo: correo.trim().toLowerCase(),
+            contrasena: contrasenaHash,
+            rol_id: docenteRolId,
+            institucion_id,
+            estado: true,
+            email_verified_at: new Date()
+        });
+
+        const docenteCreado = await Usuario.findByPk(nuevoDocente.id, {
+            include: [
+                { model: Institucion, as: 'institucion', attributes: ['nombre'] },
+                { model: Rol, as: 'rol', attributes: ['nombre', 'descripcion'] }
+            ],
+            attributes: ['id', 'nombre', 'correo', 'rol_id', 'institucion_id', 'estado', 'created_at', 'email_verified_at']
+        });
+
+        return res.status(201).json({
+            success: true,
+            data: docenteCreado,
+            message: 'Docente creado exitosamente'
+        });
+    } catch (error) {
+        console.error('Error en crearDocente:', error);
         return res.status(500).json({
             success: false,
             message: error.message

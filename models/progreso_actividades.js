@@ -101,6 +101,40 @@ module.exports = sequelize => {
       field: "ultima_interaccion",
       autoIncrement: false
     },
+    respuestas_correctas: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      primaryKey: false,
+      field: "respuestas_correctas",
+      autoIncrement: false
+    },
+    respuestas_incorrectas: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      primaryKey: false,
+      field: "respuestas_incorrectas",
+      autoIncrement: false
+    },
+    uso_audio: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 0,
+      primaryKey: false,
+      field: "uso_audio",
+      autoIncrement: false
+    },
+    /** JSON: { levelScores, levelsCompleted, maxLevelReached, lecturaSimple } */
+    detalle_niveles: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+      comment: null,
+      primaryKey: false,
+      field: "detalle_niveles",
+      autoIncrement: false
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: true,

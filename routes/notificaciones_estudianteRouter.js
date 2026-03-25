@@ -12,4 +12,10 @@ router.put('/marcar-todas-leidas/:estudiante_id', notificaciones_estudianteContr
 // O específicamente para el flujo de la medalla de registro:
 router.put('/completar-bienvenida/:estudiante_id', notificaciones_estudianteController.marcarInsigniaBienvenidaLeida);
 
+// Marcar una notificación por id (recomendado al cerrar el modal de cualquier insignia)
+router.put(
+  '/marcar-leida/:estudiante_id/:notificacion_id',
+  notificaciones_estudianteController.marcarUnaComoLeida
+);
+
 module.exports = router;

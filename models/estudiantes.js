@@ -154,6 +154,7 @@ module.exports = sequelize => {
     EstudiantesModel.hasMany(models.logros_estudiante_model, { foreignKey: 'estudiante_id', as: 'logros' });
     EstudiantesModel.hasMany(models.insignias_estudiante_model, { foreignKey: 'estudiante_id', as: 'insignias' });
     EstudiantesModel.hasMany(models.notificaciones_estudiante_model, { foreignKey: 'estudiante_id', as: 'notificaciones' });
+    EstudiantesModel.hasMany(models.accesos_plataforma_estudiante_model, { foreignKey: 'estudiante_id', as: 'accesosPlataforma' });
     EstudiantesModel.hasMany(models.lecturas_generadas_model, { foreignKey: 'estudiante_id', as: 'lecturas' });
     EstudiantesModel.hasMany(models.feedback_lecturas_ia_model, { foreignKey: 'estudiante_id', as: 'feedbacksRecibidos' });
     EstudiantesModel.hasMany(models.respuestas_estudiante_model, { foreignKey: 'estudiante_id', as: 'respuestas' });

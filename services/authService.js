@@ -9,6 +9,7 @@ const Rol = db.roles_model;
 const LogrosEstudiante = db.logros_estudiante_model;
 const InsigniasEstudiante = db.insignias_estudiante_model;
 const NotificacionesEstudiante = db.notificaciones_estudiante_model;
+const AccesosPlataformaEstudiante = db.accesos_plataforma_estudiante_model;
 
 class AuthService {
     // Generar JWT
@@ -45,7 +46,8 @@ class AuthService {
     }
 
     // Iniciar sesión (solo para estudiantes ya registrados)
-    async loginEstudiante(nombre, apellido, institucion_id) {
+    /** @param {{ ip?: string | null, userAgent?: string | null }} [meta] — para historial de accesos */
+    async loginEstudiante(nombre, apellido, institucion_id, meta = {}) {
         try {
             const institucion = await Institucion.findByPk(institucion_id);
             if (!institucion) {
@@ -65,6 +67,21 @@ class AuthService {
             }
 
             const token = this.generateToken(estudiante.id);
+
+            try {
+                if (AccesosPlataformaEstudiante) {
+                    const ip = meta.ip ? String(meta.ip).trim().substring(0, 45) : null;
+                    const ua = meta.userAgent ? String(meta.userAgent).substring(0, 2000) : null;
+                    await AccesosPlataformaEstudiante.create({
+                        estudiante_id: estudiante.id,
+                        fecha_hora: new Date(),
+                        ip_address: ip || null,
+                        user_agent: ua || null
+                    });
+                }
+            } catch (logErr) {
+                console.error('Error registrando acceso a plataforma (estudiante):', logErr.message);
+            }
 
             return {
                 estudiante: {

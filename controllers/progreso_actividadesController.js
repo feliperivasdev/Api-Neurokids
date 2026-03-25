@@ -1,11 +1,15 @@
 const db = require('../models');
 const ProgresoActividades = db.progreso_actividades_model;
+const SesionesActividad = db.sesiones_actividad_model;
 const Actividades = db.actividades_model;
 const Estudiantes = db.estudiantes_model;
+const insigniasProgresoService = require('../services/insigniasProgresoService');
+const { mergeDetalleNiveles, puntuacionMaximaEsperada } = require('../services/detalleNivelesHelper');
 
 /**
  * Guardar o actualizar progreso de una actividad
- * POST /api/progreso
+ * POST /api/progreso-actividades
+ * Acepta: respuestas_correctas, respuestas_incorrectas, uso_audio, nivel (para sesión)
  */
 exports.guardarProgreso = async (req, res) => {
     try {
@@ -18,11 +22,18 @@ exports.guardarProgreso = async (req, res) => {
             completado_at,
             intentos,
             tiempo_total,
-            ultima_interaccion
+            ultima_interaccion,
+            respuestas_correctas,
+            respuestas_incorrectas,
+            uso_audio,
+            nivel
         } = req.body;
 
+        const estudianteIdNum = parseInt(estudiante_id, 10);
+        const actividadIdNum = parseInt(actividad_id, 10);
+
         // Validar datos requeridos
-        if (!estudiante_id || !actividad_id) {
+        if (!Number.isFinite(estudianteIdNum) || !Number.isFinite(actividadIdNum)) {
             return res.status(400).json({
                 success: false,
                 message: 'Estudiante ID y Actividad ID son requeridos'
@@ -30,7 +41,7 @@ exports.guardarProgreso = async (req, res) => {
         }
 
         // Verificar que el estudiante existe
-        const estudiante = await Estudiantes.findByPk(estudiante_id);
+        const estudiante = await Estudiantes.findByPk(estudianteIdNum);
         if (!estudiante) {
             return res.status(404).json({
                 success: false,
@@ -39,7 +50,7 @@ exports.guardarProgreso = async (req, res) => {
         }
 
         // Verificar que la actividad existe
-        const actividad = await Actividades.findByPk(actividad_id);
+        const actividad = await Actividades.findByPk(actividadIdNum);
         if (!actividad) {
             return res.status(404).json({
                 success: false,
@@ -50,59 +61,123 @@ exports.guardarProgreso = async (req, res) => {
         // Buscar si ya existe progreso para esta actividad
         let progreso = await ProgresoActividades.findOne({
             where: {
-                estudiante_id,
-                actividad_id
+                estudiante_id: estudianteIdNum,
+                actividad_id: actividadIdNum
             }
         });
+        const hadExisting = !!progreso;
 
         const ahora = new Date();
 
+        const addCorrect = respuestas_correctas !== undefined ? respuestas_correctas : 0;
+        const addIncorrect = respuestas_incorrectas !== undefined ? respuestas_incorrectas : 0;
+        const addAudio = uso_audio !== undefined ? uso_audio : 0;
+
+        const maxPtsCatalogo = puntuacionMaximaEsperada(actividad);
+        const { merged, totalScore, activityComplete } = mergeDetalleNiveles(progreso, req.body, actividad);
+
+        let completadoAt = null;
+        if (activityComplete) {
+            if (progreso && progreso.completado && progreso.completado_at) {
+                completadoAt = progreso.completado_at;
+            } else {
+                completadoAt = ahora;
+            }
+        }
+
+        const basePayload = {
+            puntuacion: totalScore,
+            puntuacion_maxima: maxPtsCatalogo,
+            completado: activityComplete,
+            completado_at: completadoAt,
+            detalle_niveles: merged,
+            intentos: progreso
+                ? intentos !== undefined
+                    ? (progreso.intentos || 0) + intentos
+                    : progreso.intentos
+                : intentos || 1,
+            tiempo_total: progreso
+                ? tiempo_total !== undefined
+                    ? (progreso.tiempo_total || 0) + tiempo_total
+                    : progreso.tiempo_total
+                : tiempo_total || 0,
+            respuestas_correctas: (progreso?.respuestas_correctas || 0) + addCorrect,
+            respuestas_incorrectas: (progreso?.respuestas_incorrectas || 0) + addIncorrect,
+            uso_audio: (progreso?.uso_audio || 0) + addAudio,
+            ultima_interaccion: ultima_interaccion ? new Date(ultima_interaccion) : ahora,
+            updated_at: ahora
+        };
+
+        const nivelSesion = nivel ?? actividad.nivel ?? 1;
+        const sesionCompletado =
+            activityComplete ||
+            req.body.nivel_completado === true ||
+            req.body.nivel_completado === 'true' ||
+            completado === true;
+
         if (progreso) {
-            // Actualizar progreso existente
-            const datosActualizacion = {
-                puntuacion: puntuacion !== undefined ? puntuacion : progreso.puntuacion,
-                puntuacion_maxima: puntuacion_maxima || actividad.puntuacion_maxima || progreso.puntuacion_maxima,
-                completado: completado !== undefined ? completado : progreso.completado,
-                completado_at: completado ? ahora : (progreso.completado ? progreso.completado_at : null),
-                intentos: intentos !== undefined ? (progreso.intentos || 0) + intentos : progreso.intentos,
-                tiempo_total: tiempo_total !== undefined ? (progreso.tiempo_total || 0) + tiempo_total : progreso.tiempo_total,
-                ultima_interaccion: ultima_interaccion ? new Date(ultima_interaccion) : ahora,
-                updated_at: ahora
-            };
-
-            await progreso.update(datosActualizacion);
-
-            return res.status(200).json({
-                success: true,
-                message: 'Progreso actualizado exitosamente',
-                data: progreso
-            });
+            await progreso.update(basePayload);
+            await progreso.reload();
         } else {
-            // Función para generar ID manual
             const generateManualId = () => Math.floor(Date.now() + Math.random() * 1000);
-            
-            // Crear nuevo registro de progreso
             progreso = await ProgresoActividades.create({
                 id: generateManualId(),
-                estudiante_id,
-                actividad_id,
-                puntuacion: puntuacion || 0,
-                puntuacion_maxima: puntuacion_maxima || actividad.puntuacion_maxima || 100,
-                completado: completado || false,
-                completado_at: completado ? ahora : null,
-                intentos: intentos || 1,
+                estudiante_id: estudianteIdNum,
+                actividad_id: actividadIdNum,
+                ...basePayload,
+                respuestas_correctas: addCorrect,
+                respuestas_incorrectas: addIncorrect,
+                uso_audio: addAudio,
                 tiempo_total: tiempo_total || 0,
-                ultima_interaccion: ultima_interaccion ? new Date(ultima_interaccion) : ahora,
+                intentos: intentos || 1,
                 created_at: ahora,
                 updated_at: ahora
             });
-
-            return res.status(201).json({
-                success: true,
-                message: 'Progreso registrado exitosamente',
-                data: progreso
-            });
+            await progreso.reload();
         }
+
+        const puntuacionSesion =
+            puntuacion !== undefined && puntuacion !== null && Number.isFinite(Number(puntuacion))
+                ? Number(puntuacion)
+                : (totalScore ?? 0);
+        const maxPtsSesion =
+            puntuacion_maxima !== undefined && puntuacion_maxima !== null && Number.isFinite(Number(puntuacion_maxima))
+                ? Number(puntuacion_maxima)
+                : (maxPtsCatalogo || actividad.puntuacion_maxima || 100);
+
+        await SesionesActividad.create({
+            estudiante_id: estudianteIdNum,
+            actividad_id: actividadIdNum,
+            nivel: nivelSesion,
+            fecha: ahora,
+            duracion_seg: Number(tiempo_total) || 0,
+            completado: sesionCompletado,
+            respuestas_correctas: addCorrect,
+            respuestas_incorrectas: addIncorrect,
+            uso_audio: addAudio,
+            puntuacion: puntuacionSesion,
+            puntuacion_maxima: maxPtsSesion
+        });
+
+        let insignias_desbloqueadas = [];
+        if (progreso.completado) {
+            try {
+                insignias_desbloqueadas = await insigniasProgresoService.evaluarInsigniasTrasActividad(
+                    estudianteIdNum,
+                    actividad,
+                    true
+                );
+            } catch (insErr) {
+                console.error('Error evaluando insignias:', insErr);
+            }
+        }
+
+        return res.status(hadExisting ? 200 : 201).json({
+            success: true,
+            message: hadExisting ? 'Progreso actualizado exitosamente' : 'Progreso registrado exitosamente',
+            data: progreso,
+            insignias_desbloqueadas
+        });
     } catch (error) {
         console.error('Error guardando progreso:', error);
         return res.status(500).json({
@@ -120,9 +195,10 @@ exports.guardarProgreso = async (req, res) => {
 exports.getProgresoEstudiante = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
+        const estudianteIdNum = parseInt(estudiante_id, 10);
 
         // Verificar que el estudiante existe
-        const estudiante = await Estudiantes.findByPk(estudiante_id);
+        const estudiante = await Estudiantes.findByPk(estudianteIdNum);
         if (!estudiante) {
             return res.status(404).json({
                 success: false,
@@ -132,7 +208,7 @@ exports.getProgresoEstudiante = async (req, res) => {
 
         // Obtener progreso del estudiante
         const progreso = await ProgresoActividades.findAll({
-            where: { estudiante_id },
+            where: { estudiante_id: estudianteIdNum },
             include: [
                 {
                     model: Actividades,
@@ -183,11 +259,13 @@ exports.getProgresoEstudiante = async (req, res) => {
 exports.getProgresoActividad = async (req, res) => {
     try {
         const { actividad_id, estudiante_id } = req.params;
+        const actividadIdNum = parseInt(actividad_id, 10);
+        const estudianteIdNum = parseInt(estudiante_id, 10);
 
         const progreso = await ProgresoActividades.findOne({
             where: {
-                actividad_id,
-                estudiante_id
+                actividad_id: actividadIdNum,
+                estudiante_id: estudianteIdNum
             },
             include: [
                 {
@@ -226,9 +304,10 @@ exports.getProgresoActividad = async (req, res) => {
 exports.getResumenProgreso = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
+        const estudianteIdNum = parseInt(estudiante_id, 10);
 
         // Verificar que el estudiante existe
-        const estudiante = await Estudiantes.findByPk(estudiante_id);
+        const estudiante = await Estudiantes.findByPk(estudianteIdNum);
         if (!estudiante) {
             return res.status(404).json({
                 success: false,
@@ -238,7 +317,7 @@ exports.getResumenProgreso = async (req, res) => {
 
         // Obtener progreso del estudiante
         const progreso = await ProgresoActividades.findAll({
-            where: { estudiante_id },
+            where: { estudiante_id: estudianteIdNum },
             include: [
                 {
                     model: Actividades,
@@ -283,7 +362,7 @@ exports.getResumenProgreso = async (req, res) => {
         });
 
         const resumen = {
-            estudiante_id,
+            estudiante_id: estudianteIdNum,
             total_actividades: progreso.length,
             completadas: progreso.filter(p => p.completado).length,
             pendientes: progreso.filter(p => !p.completado).length,
@@ -322,10 +401,11 @@ exports.getResumenProgreso = async (req, res) => {
 exports.getActividadesPendientes = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
+        const estudianteIdNum = parseInt(estudiante_id, 10);
 
         const actividades = await ProgresoActividades.findAll({
             where: {
-                estudiante_id,
+                estudiante_id: estudianteIdNum,
                 completado: false
             },
             include: [

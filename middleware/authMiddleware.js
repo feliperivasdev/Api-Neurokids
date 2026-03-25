@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../models');
 const Usuario = db.usuarios_model;
+const Rol = db.roles_model;
 
 exports.verificarToken = (req, res, next) => {
     try {
@@ -39,9 +40,10 @@ exports.verificarRol = (rolesPermitidos) => {
                 });
             }
 
-            // Buscar el usuario en la base de datos para obtener su rol
+            // Buscar el usuario en la base de datos con su rol (por nombre, por si los IDs difieren)
             const usuario = await Usuario.findByPk(usuarioId, {
-                attributes: ['id', 'rol_id', 'estado']
+                attributes: ['id', 'rol_id', 'estado', 'institucion_id'],
+                include: [{ model: Rol, as: 'rol', attributes: ['id', 'nombre'] }]
             });
 
             if (!usuario) {
@@ -58,16 +60,22 @@ exports.verificarRol = (rolesPermitidos) => {
                 });
             }
 
-            // Verificar si el rol del usuario está en los roles permitidos
-            if (!rolesPermitidos.includes(usuario.rol_id)) {
+            // Verificar por rol_id o por nombre de rol
+            const rolNombre = (usuario.rol?.nombre || '').toLowerCase();
+            const permitido = rolesPermitidos.some(r =>
+                typeof r === 'number' ? usuario.rol_id === r : rolNombre === String(r).toLowerCase()
+            );
+            if (!permitido) {
                 return res.status(403).json({
                     success: false,
                     message: 'No tienes permisos para acceder a este recurso'
                 });
             }
 
-            // Agregar información del rol al request
+            // Agregar información del rol e institución al request
             req.usuario.rol_id = usuario.rol_id;
+            req.usuario.institucion_id = usuario.institucion_id;
+            req.usuario.rol_nombre = (usuario.rol?.nombre || '').toLowerCase();
             next();
 
         } catch (error) {
@@ -81,13 +89,13 @@ exports.verificarRol = (rolesPermitidos) => {
 };
 
 // Middleware específico para administradores
-exports.verificarAdministrador = exports.verificarRol([1]);
+exports.verificarAdministrador = exports.verificarRol([1, 'administrador']);
 
 // Middleware específico para docentes
-exports.verificarDocente = exports.verificarRol([2]);
+exports.verificarDocente = exports.verificarRol([2, 'docente']);
 
 // Middleware específico para estudiantes
 exports.verificarEstudiante = exports.verificarRol([3]);
 
-// Middleware para administradores y docentes
-exports.verificarAdminODocente = exports.verificarRol([1, 2]);
+// Middleware para administradores y docentes (IDs 1,2 o nombres)
+exports.verificarAdminODocente = exports.verificarRol([1, 2, 'administrador', 'docente']);
