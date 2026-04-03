@@ -75,9 +75,24 @@ exports.guardarProgreso = async (req, res) => {
 
         const maxPtsCatalogo = puntuacionMaximaEsperada(actividad);
         const { merged, totalScore, activityComplete } = mergeDetalleNiveles(progreso, req.body, actividad);
+        /** No perder completado por carrera (p. ej. solo_registro del nivel siguiente llega tras fin de nivel). */
+        const finalActivityComplete =
+            Boolean(activityComplete) || Boolean(progreso && progreso.completado);
+        let mergedOut = merged;
+        if (
+            finalActivityComplete &&
+            !activityComplete &&
+            progreso &&
+            progreso.completado
+        ) {
+            const keep = progreso.get ? progreso.get('detalle_niveles') : progreso.detalle_niveles;
+            if (keep && typeof keep === 'object') {
+                mergedOut = keep;
+            }
+        }
 
         let completadoAt = null;
-        if (activityComplete) {
+        if (finalActivityComplete) {
             if (progreso && progreso.completado && progreso.completado_at) {
                 completadoAt = progreso.completado_at;
             } else {
@@ -88,9 +103,9 @@ exports.guardarProgreso = async (req, res) => {
         const basePayload = {
             puntuacion: totalScore,
             puntuacion_maxima: maxPtsCatalogo,
-            completado: activityComplete,
+            completado: finalActivityComplete,
             completado_at: completadoAt,
-            detalle_niveles: merged,
+            detalle_niveles: mergedOut,
             intentos: progreso
                 ? intentos !== undefined
                     ? (progreso.intentos || 0) + intentos
@@ -160,16 +175,14 @@ exports.guardarProgreso = async (req, res) => {
         });
 
         let insignias_desbloqueadas = [];
-        if (progreso.completado) {
-            try {
-                insignias_desbloqueadas = await insigniasProgresoService.evaluarInsigniasTrasActividad(
-                    estudianteIdNum,
-                    actividad,
-                    true
-                );
-            } catch (insErr) {
-                console.error('Error evaluando insignias:', insErr);
-            }
+        try {
+            insignias_desbloqueadas = await insigniasProgresoService.evaluarInsigniasTrasActividad(
+                estudianteIdNum,
+                actividad,
+                Boolean(finalActivityComplete)
+            );
+        } catch (insErr) {
+            console.error('Error evaluando insignias:', insErr);
         }
 
         return res.status(hadExisting ? 200 : 201).json({

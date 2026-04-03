@@ -20,6 +20,7 @@
  * Registra notificación (notificaciones_estudiante) y actualiza logros_estudiante al desbloquear.
  */
 
+const { Op } = require('sequelize');
 const db = require('../models');
 
 const ProgresoActividades = db.progreso_actividades_model;
@@ -42,6 +43,55 @@ function parseCondicion(cond) {
   return cond;
 }
 
+/** Evita fallos si Sequelize devuelve BigInt o getters raros en id/tipo. */
+function normalizeActividad(actividad) {
+  if (!actividad) return null;
+  const plain =
+    typeof actividad.get === 'function'
+      ? actividad.get({ plain: true })
+      : { ...actividad };
+  return {
+    id: Number(plain.id),
+    tipo_actividad_id: Number(plain.tipo_actividad_id),
+    grupo_edad_id:
+      plain.grupo_edad_id != null && plain.grupo_edad_id !== ''
+        ? Number(plain.grupo_edad_id)
+        : null
+  };
+}
+
+/**
+ * Criterios que significan "completar esta(s) actividad(es) concreta(s)".
+ * Varios de estos para la misma insignia se evalúan en OR (completar A o B desbloquea).
+ */
+function isCriterioCompletarActividadConcreta(criterio) {
+  const tipo = String(criterio.tipo_criterio || '')
+    .toLowerCase()
+    .trim();
+  if (
+    tipo === 'completar_actividades' ||
+    tipo === 'cantidad_actividades' ||
+    tipo === 'actividades_completadas' ||
+    tipo === 'lecturas_completadas' ||
+    tipo === 'sin_errores' ||
+    tipo === 'racha_dias' ||
+    tipo === 'evaluacion_perfecta' ||
+    tipo === 'registro_nuevo' ||
+    tipo === 'primera_actividad_completada' ||
+    tipo === 'primera_actividad' ||
+    tipo === 'primer_juego' ||
+    tipo === 'primera_actividad_tipo_juego' ||
+    tipo === 'primera_lectura' ||
+    tipo === 'primer_lectura' ||
+    tipo === 'primera_actividad_tipo_lectura'
+  ) {
+    return false;
+  }
+  if (tipo === 'completar_actividad' || tipo === 'actividad_completada') return true;
+  const cond = parseCondicion(criterio.condicion_adicional);
+  return cond.actividad_id != null;
+}
+
 /**
  * Cuenta filas en progreso_actividades con completado=true, con filtros opcionales sobre la actividad relacionada.
  */
@@ -57,6 +107,35 @@ async function contarActividadesCompletadas(estudianteIdNum, filters = {}) {
     where: {
       estudiante_id: estudianteIdNum,
       completado: true
+    },
+    include: hasIncludeFilter
+      ? [
+          {
+            model: Actividades,
+            as: 'actividad',
+            attributes: [],
+            where: includeWhere,
+            required: true
+          }
+        ]
+      : []
+  });
+}
+
+/** Actividades completadas con 0 respuestas incorrectas (o null). */
+async function contarActividadesCompletadasSinErrores(estudianteIdNum, filters = {}) {
+  const { tipo_actividad_id, grupo_edad_id } = filters;
+  const includeWhere = {};
+  if (tipo_actividad_id != null) includeWhere.tipo_actividad_id = tipo_actividad_id;
+  if (grupo_edad_id != null) includeWhere.grupo_edad_id = grupo_edad_id;
+
+  const hasIncludeFilter = Object.keys(includeWhere).length > 0;
+
+  return ProgresoActividades.count({
+    where: {
+      estudiante_id: estudianteIdNum,
+      completado: true,
+      [Op.or]: [{ respuestas_incorrectas: 0 }, { respuestas_incorrectas: null }]
     },
     include: hasIncludeFilter
       ? [
@@ -90,7 +169,10 @@ async function evaluarCriterio(criterio, ctx) {
 
   const actId = Number(ctx.actividad.id);
   const actTipo = Number(ctx.actividad.tipo_actividad_id);
-  const actGrupo = ctx.actividad.grupo_edad_id != null ? Number(ctx.actividad.grupo_edad_id) : null;
+  const actGrupo =
+    ctx.actividad.grupo_edad_id != null && ctx.actividad.grupo_edad_id !== ''
+      ? Number(ctx.actividad.grupo_edad_id)
+      : null;
 
   switch (tipo) {
     case 'completar_actividad':
@@ -116,7 +198,9 @@ async function evaluarCriterio(criterio, ctx) {
         ok: ctx.completado && actTipo === 1 && ctx.totalCompletadasLecturas === 1
       };
     case 'completar_actividades':
-    case 'cantidad_actividades': {
+    case 'cantidad_actividades':
+    /** Alias usado en muchas bases existentes */
+    case 'actividades_completadas': {
       const n = await contarActividadesCompletadas(ctx.estudianteId, {
         tipo_actividad_id: tipoActCriterio != null ? tipoActCriterio : undefined,
         grupo_edad_id: grupoEdadCriterio != null ? grupoEdadCriterio : undefined
@@ -126,6 +210,42 @@ async function evaluarCriterio(criterio, ctx) {
         progresoParcial: { actual: n, requerido: valorReq }
       };
     }
+    /** Cuenta solo lecturas (tipo_actividad_id = 1); la fila del criterio puede afinar grupo_edad_id. */
+    case 'lecturas_completadas': {
+      const n = await contarActividadesCompletadas(ctx.estudianteId, {
+        tipo_actividad_id: tipoActCriterio != null ? tipoActCriterio : 1,
+        grupo_edad_id: grupoEdadCriterio != null ? grupoEdadCriterio : undefined
+      });
+      return {
+        ok: n >= valorReq,
+        progresoParcial: { actual: n, requerido: valorReq }
+      };
+    }
+    /** Actividades completadas sin respuestas incorrectas. */
+    case 'sin_errores': {
+      const n = await contarActividadesCompletadasSinErrores(ctx.estudianteId, {
+        tipo_actividad_id: tipoActCriterio != null ? tipoActCriterio : undefined,
+        grupo_edad_id: grupoEdadCriterio != null ? grupoEdadCriterio : undefined
+      });
+      return {
+        ok: n >= valorReq,
+        progresoParcial: { actual: n, requerido: valorReq }
+      };
+    }
+    /** Racha en días (logros_estudiante.racha_dias_actual). */
+    case 'racha_dias': {
+      const r = Number(ctx.rachaDiasActual) || 0;
+      return {
+        ok: r >= valorReq,
+        progresoParcial: { actual: r, requerido: valorReq }
+      };
+    }
+    /** Pendiente de integrar con flujo de evaluaciones; no se desbloquea por progreso de actividades. */
+    case 'evaluacion_perfecta':
+      return { ok: false };
+    /** Solo aplica al alta (auth); insignia 14 se ignora en evaluarInsigniasTrasActividad. */
+    case 'registro_nuevo':
+      return { ok: false };
     default: {
       if (cond.actividad_id != null) {
         const target = Number(cond.actividad_id);
@@ -193,16 +313,23 @@ async function aplicarInsigniaDesbloqueada(estudianteIdNum, insigniaId, activida
     created_at: ahora
   });
 
-  const logros = await LogrosEstudiante.findOne({
+  let logros = await LogrosEstudiante.findOne({
     where: { estudiante_id: estudianteIdNum }
   });
-  if (logros) {
-    await logros.update({
-      insignias_totales: (Number(logros.insignias_totales) || 0) + 1,
-      puntos_totales: (Number(logros.puntos_totales) || 0) + puntos,
+  if (!logros) {
+    logros = await LogrosEstudiante.create({
+      estudiante_id: estudianteIdNum,
+      insignias_totales: 0,
+      puntos_totales: 0,
+      created_at: ahora,
       updated_at: ahora
     });
   }
+  await logros.update({
+    insignias_totales: (Number(logros.insignias_totales) || 0) + 1,
+    puntos_totales: (Number(logros.puntos_totales) || 0) + puntos,
+    updated_at: ahora
+  });
 
   return {
     insignia_id: insigniaId,
@@ -248,12 +375,32 @@ async function actualizarProgresoParcial(estudianteIdNum, insigniaId, actual, re
  * @returns {Promise<Array<{ insignia_id: number, nombre: string, descripcion: string, puntos_otorgados: number }>>}
  */
 async function evaluarInsigniasTrasActividad(estudianteIdNum, actividad, completado) {
-  const desbloqueadas = [];
+  if (!actividad) {
+    return [];
+  }
 
-  if (!completado || !actividad) {
+  const actPlain = normalizeActividad(actividad);
+  if (!actPlain || !Number.isFinite(actPlain.id)) {
     return desbloqueadas;
   }
 
+  const ctx = await construirContextoInsignias(estudianteIdNum, actPlain, completado);
+  const origenId =
+    actPlain.id && Number(actPlain.id) > 0 ? Number(actPlain.id) : null;
+  return ejecutarEvaluacionInsignias(estudianteIdNum, ctx, origenId);
+}
+
+/**
+ * Tras login/visita: evalúa criterios que no dependen de una actividad concreta en esta petición
+ * (p. ej. racha de días, cantidad total). actividad origen en insignias_estudiante queda null.
+ */
+async function evaluarInsigniasRachaTrasAcceso(estudianteIdNum) {
+  const dummy = { id: 0, tipo_actividad_id: 1, grupo_edad_id: null };
+  const ctx = await construirContextoInsignias(estudianteIdNum, dummy, false);
+  return ejecutarEvaluacionInsignias(estudianteIdNum, ctx, null);
+}
+
+async function construirContextoInsignias(estudianteIdNum, actPlain, completado) {
   const totalCompletadasGlobal = await ProgresoActividades.count({
     where: { estudiante_id: estudianteIdNum, completado: true }
   });
@@ -265,14 +412,26 @@ async function evaluarInsigniasTrasActividad(estudianteIdNum, actividad, complet
     tipo_actividad_id: 1
   });
 
-  const ctx = {
+  const logrosStreak = await LogrosEstudiante.findOne({
+    where: { estudiante_id: estudianteIdNum },
+    attributes: ['racha_dias_actual']
+  });
+  /** Racha actual (días seguidos con acceso); no mezclar con máxima histórica para el umbral de insignia. */
+  const rachaDiasActual = logrosStreak ? Number(logrosStreak.racha_dias_actual) || 0 : 0;
+
+  return {
     estudianteId: estudianteIdNum,
-    actividad,
-    completado: true,
+    actividad: actPlain,
+    completado: Boolean(completado),
     totalCompletadasGlobal,
     totalCompletadasJuegos,
-    totalCompletadasLecturas
+    totalCompletadasLecturas,
+    rachaDiasActual
   };
+}
+
+async function ejecutarEvaluacionInsignias(estudianteIdNum, ctx, actividadOrigenId) {
+  const desbloqueadas = [];
 
   const todosCriterios = await CriteriosInsignias.findAll({ raw: true });
   if (!todosCriterios.length) {
@@ -297,35 +456,51 @@ async function evaluarInsigniasTrasActividad(estudianteIdNum, actividad, complet
     });
     if (ya && ya.completado) continue;
 
-    let allOk = true;
-    let parcialUnico = null;
+    const porActividadConcreta = criterios.filter(isCriterioCompletarActividadConcreta);
+    const otrosCriterios = criterios.filter((c) => !isCriterioCompletarActividadConcreta(c));
 
-    for (const c of criterios) {
-      const res = await evaluarCriterio(c, ctx);
-      if (!res.ok) {
-        allOk = false;
-        if (criterios.length === 1 && res.progresoParcial) {
-          parcialUnico = res.progresoParcial;
+    let orPart = true;
+    if (porActividadConcreta.length > 0) {
+      orPart = false;
+      for (const c of porActividadConcreta) {
+        const res = await evaluarCriterio(c, ctx);
+        if (res.ok) {
+          orPart = true;
+          break;
         }
       }
     }
+
+    let restoOk = true;
+    let parcialMejor = null;
+    for (const c of otrosCriterios) {
+      const res = await evaluarCriterio(c, ctx);
+      if (!res.ok) {
+        restoOk = false;
+        if (res.progresoParcial) {
+          parcialMejor = res.progresoParcial;
+        }
+      }
+    }
+
+    const allOk = orPart && restoOk;
 
     if (allOk) {
       const out = await aplicarInsigniaDesbloqueada(
         estudianteIdNum,
         insigniaId,
-        Number(actividad.id)
+        actividadOrigenId
       );
       if (out) desbloqueadas.push(out);
     } else if (
-      parcialUnico &&
-      parcialUnico.actual < parcialUnico.requerido
+      parcialMejor &&
+      parcialMejor.actual < parcialMejor.requerido
     ) {
       await actualizarProgresoParcial(
         estudianteIdNum,
         insigniaId,
-        parcialUnico.actual,
-        parcialUnico.requerido
+        parcialMejor.actual,
+        parcialMejor.requerido
       );
     }
   }
@@ -335,5 +510,6 @@ async function evaluarInsigniasTrasActividad(estudianteIdNum, actividad, complet
 
 module.exports = {
   evaluarInsigniasTrasActividad,
+  evaluarInsigniasRachaTrasAcceso,
   contarActividadesCompletadas
 };

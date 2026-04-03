@@ -10,6 +10,8 @@ const LogrosEstudiante = db.logros_estudiante_model;
 const InsigniasEstudiante = db.insignias_estudiante_model;
 const NotificacionesEstudiante = db.notificaciones_estudiante_model;
 const AccesosPlataformaEstudiante = db.accesos_plataforma_estudiante_model;
+const rachaAccesosService = require('./rachaAccesosService');
+const insigniasProgresoService = require('./insigniasProgresoService');
 
 class AuthService {
     // Generar JWT
@@ -78,6 +80,12 @@ class AuthService {
                         ip_address: ip || null,
                         user_agent: ua || null
                     });
+                    try {
+                        await rachaAccesosService.sincronizarRachaDesdeAccesos(estudiante.id);
+                        await insigniasProgresoService.evaluarInsigniasRachaTrasAcceso(estudiante.id);
+                    } catch (rachaErr) {
+                        console.error('Racha/insignias tras login:', rachaErr.message);
+                    }
                 }
             } catch (logErr) {
                 console.error('Error registrando acceso a plataforma (estudiante):', logErr.message);
@@ -101,6 +109,55 @@ class AuthService {
         } catch (error) {
             throw new Error(`Error en login: ${error.message}`);
         }
+    }
+
+    /**
+     * Registra una visita al panel (sesión ya autenticada). Antiduplicado por ventana de tiempo
+     * para no llenar la tabla en cada refresco. Solo tokens de estudiante (sin `role` en el JWT).
+     */
+    async registrarVisitaEstudiante(estudianteId, meta = {}) {
+        const id = Number(estudianteId);
+        if (!Number.isFinite(id)) {
+            throw new Error('ID de estudiante inválido');
+        }
+        const exists = await Estudiante.findByPk(id, { attributes: ['id'] });
+        if (!exists) {
+            throw new Error('Estudiante no encontrado');
+        }
+        if (!AccesosPlataformaEstudiante) {
+            return { ok: true, skipped: true, reason: 'model_unavailable' };
+        }
+        const MIN_MS = 25 * 60 * 1000;
+        const last = await AccesosPlataformaEstudiante.findOne({
+            where: { estudiante_id: id },
+            order: [['fecha_hora', 'DESC']],
+            attributes: ['fecha_hora'],
+            raw: true
+        });
+        const now = Date.now();
+        if (last?.fecha_hora) {
+            const t = last.fecha_hora instanceof Date
+                ? last.fecha_hora.getTime()
+                : new Date(last.fecha_hora).getTime();
+            if (Number.isFinite(t) && now - t < MIN_MS) {
+                return { ok: true, skipped: true, reason: 'throttle' };
+            }
+        }
+        const ip = meta.ip ? String(meta.ip).trim().substring(0, 45) : null;
+        const ua = meta.userAgent ? String(meta.userAgent).substring(0, 2000) : null;
+        await AccesosPlataformaEstudiante.create({
+            estudiante_id: id,
+            fecha_hora: new Date(),
+            ip_address: ip || null,
+            user_agent: ua || null
+        });
+        try {
+            await rachaAccesosService.sincronizarRachaDesdeAccesos(id);
+            await insigniasProgresoService.evaluarInsigniasRachaTrasAcceso(id);
+        } catch (rachaErr) {
+            console.error('Racha/insignias tras visita:', rachaErr.message);
+        }
+        return { ok: true, registered: true };
     }
 
     // Generar código de estudiante único

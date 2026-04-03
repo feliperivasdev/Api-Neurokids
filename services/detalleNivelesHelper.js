@@ -1,7 +1,7 @@
 /**
  * Fusiona `detalle_niveles` (JSON) con cada guardado de progreso.
  * - Juegos (tipo 2): hasta 3 niveles; puntos por nivel acumulables (suma en `puntuacion`).
- * - Lecturas (tipo 1): una sola finalización marca los 3 círculos del mapa y completa la actividad.
+ * - Lecturas (tipo 1): lectura en bloque (`completado: true`) o por niveles (1–3) como los juegos.
  */
 
 const MAX_LEVELS = 3;
@@ -88,10 +88,12 @@ function mergeDetalleNiveles(existingRow, body, actividad) {
     prev.lecturaSimple = true;
     if (soloRegistro) {
       prev.maxLevelReached = Math.max(prev.maxLevelReached || 0, nivel);
+      const complete =
+        allGameLevelsDone(prev.levelsCompleted) || Boolean(rowCompletado);
       return {
         merged: prev,
         totalScore: sumLevelScores(prev.levelScores) || punt,
-        activityComplete: Boolean(rowCompletado)
+        activityComplete: complete
       };
     }
     if (completadoCliente) {
@@ -104,11 +106,21 @@ function mergeDetalleNiveles(existingRow, body, actividad) {
         activityComplete: true
       };
     }
+    /** Lectura por niveles (readingLevelFinished): acumula niveles como en juegos. */
+    if (nivelCompletado) {
+      prev.levelScores[nivel] = Math.max(Number(prev.levelScores[nivel] || 0), punt);
+      if (!prev.levelsCompleted.includes(nivel)) {
+        prev.levelsCompleted.push(nivel);
+      }
+      prev.levelsCompleted.sort((a, b) => a - b);
+    }
     prev.maxLevelReached = Math.max(prev.maxLevelReached || 0, nivel);
+    const totalLectura = sumLevelScores(prev.levelScores) || punt;
+    const lecturaCompletaPorNiveles = allGameLevelsDone(prev.levelsCompleted);
     return {
       merged: prev,
-      totalScore: sumLevelScores(prev.levelScores) || punt,
-      activityComplete: false
+      totalScore: totalLectura,
+      activityComplete: lecturaCompletaPorNiveles
     };
   }
 
@@ -116,10 +128,13 @@ function mergeDetalleNiveles(existingRow, body, actividad) {
     prev.lecturaSimple = false;
     if (soloRegistro) {
       prev.maxLevelReached = Math.max(prev.maxLevelReached || 0, nivel);
+      /** No bajar a no-completado si otra petición ya marcó la actividad (evita carrera con fin de nivel). */
+      const complete =
+        allGameLevelsDone(prev.levelsCompleted) || Boolean(rowCompletado);
       return {
         merged: prev,
         totalScore: sumLevelScores(prev.levelScores),
-        activityComplete: allGameLevelsDone(prev.levelsCompleted)
+        activityComplete: complete
       };
     }
     if (nivelCompletadoFlag) {

@@ -21,6 +21,7 @@ router.post('/logout', authController.logout);
 
 // Rutas protegidas - ESTUDIANTES
 router.get('/estudiantes/me', verificarToken, authController.getMeEstudiante);
+router.post('/estudiantes/registrar-visita', verificarToken, authController.registrarVisitaEstudiante);
 
 // Rutas protegidas - DOCENTES
 router.get('/docentes/me', verificarToken, authController.getMeDocente);

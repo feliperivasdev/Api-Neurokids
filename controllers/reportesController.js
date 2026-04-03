@@ -8,6 +8,22 @@ const Actividades = db.actividades_model;
 const GruposEdad = db.grupos_edad_model;
 const InsigniasEstudiante = db.insignias_estudiante_model;
 const Insignias = db.insignias_model;
+const AccesosPlataformaEstudiante = db.accesos_plataforma_estudiante_model;
+
+function toNum(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Igual que en insignias_estudianteController */
+function insigniaDesbloqueada(reg) {
+  if (!reg) return false;
+  if (reg.completado === true) return true;
+  const req = reg.progreso_requerido != null ? Number(reg.progreso_requerido) : 1;
+  const act = reg.progreso_actual != null ? Number(reg.progreso_actual) : 0;
+  return req > 0 && act >= req;
+}
 
 function calcularRachaDias(sesionesRows) {
   const days = new Set();
@@ -33,6 +49,16 @@ function calcularRachaDias(sesionesRows) {
   return streak;
 }
 
+function actividadCompletada(row) {
+  if (!row) return false;
+  if (row.completado === true) return true;
+  const dn = row.detalle_niveles && typeof row.detalle_niveles === 'object' ? row.detalle_niveles : null;
+  const maxLevel = dn ? Number(dn.maxLevelReached ?? 0) : 0;
+  if (Number.isFinite(maxLevel) && maxLevel >= 3) return true;
+  const levelsCompleted = Array.isArray(dn?.levelsCompleted) ? dn.levelsCompleted : [];
+  return levelsCompleted.some((lv) => Number(lv) >= 3);
+}
+
 function armarResumen({ actividadesDetalladas, estudiante, insigniasDetalladas, sesionesAll }) {
   let puntos_totales = 0;
   let lecturas_completadas = 0;
@@ -41,7 +67,7 @@ function armarResumen({ actividadesDetalladas, estudiante, insigniasDetalladas, 
   let respuestas_incorrectas = 0;
   actividadesDetalladas.forEach((p) => {
     puntos_totales += Number(p.puntuacion || 0);
-    if (p.completado) {
+    if (actividadCompletada(p)) {
       if (p.tipo_actividad_id === 1) lecturas_completadas++;
       if (p.tipo_actividad_id === 2) juegos_completados++;
     }
@@ -129,14 +155,14 @@ async function buildReporteDetalleData(estudiante_id, query) {
     const key = `${s.estudiante_id}-${s.actividad_id}`;
     const sesionData = {
       fecha: s.fecha ? (s.fecha instanceof Date ? s.fecha.toISOString() : String(s.fecha)) : null,
-      duracion_seg: s.duracion_seg ?? 0,
+      duracion_seg: toNum(s.duracion_seg),
       completado: Boolean(s.completado),
-      respuestas_correctas: s.respuestas_correctas ?? 0,
-      respuestas_incorrectas: s.respuestas_incorrectas ?? 0,
-      uso_audio: s.uso_audio ?? 0,
-      nivel: s.nivel ?? 1,
-      puntuacion: s.puntuacion ?? 0,
-      puntuacion_maxima: s.puntuacion_maxima ?? 100
+      respuestas_correctas: toNum(s.respuestas_correctas),
+      respuestas_incorrectas: toNum(s.respuestas_incorrectas),
+      uso_audio: toNum(s.uso_audio),
+      nivel: Math.max(1, Math.round(toNum(s.nivel)) || 1),
+      puntuacion: toNum(s.puntuacion),
+      puntuacion_maxima: toNum(s.puntuacion_maxima) || 100
     };
     if (!sesionesPorActividad[key]) sesionesPorActividad[key] = [];
     sesionesPorActividad[key].push(sesionData);
@@ -161,6 +187,7 @@ async function buildReporteDetalleData(estudiante_id, query) {
       respuestas_correctas: p.respuestas_correctas ?? 0,
       respuestas_incorrectas: p.respuestas_incorrectas ?? 0,
       uso_audio: p.uso_audio ?? 0,
+      detalle_niveles: p.detalle_niveles ?? null,
       ultima_interaccion: p.ultima_interaccion,
       sesiones: sesionesPorActividad[key] || []
     };
@@ -249,6 +276,88 @@ async function buildReporteDetalleData(estudiante_id, query) {
     obtenido_at: i.obtenido_at
   }));
 
+  const catalogoInsigniasRows = await Insignias.findAll({
+    order: [
+      ['orden_presentacion', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+  const registrosInsignias = await InsigniasEstudiante.findAll({
+    where: { estudiante_id: est.id },
+    attributes: [
+      'insignia_id',
+      'completado',
+      'obtenido_at',
+      'progreso_actual',
+      'progreso_requerido'
+    ]
+  });
+  const porInsigniaId = new Map(registrosInsignias.map((r) => [Number(r.insignia_id), r]));
+  const catalogoInsignias = catalogoInsigniasRows.map((ins) => {
+    const g = porInsigniaId.get(Number(ins.id));
+    return {
+      id: ins.id,
+      nombre: ins.nombre,
+      descripcion: ins.descripcion,
+      icono: ins.icono,
+      color_hex: ins.color_hex,
+      categoria: ins.categoria,
+      rareza: ins.rareza,
+      puntos_otorgados: ins.puntos_otorgados,
+      desbloqueada: insigniaDesbloqueada(g),
+      obtenido_at: g?.obtenido_at || null,
+      progreso_actual: g?.progreso_actual ?? null,
+      progreso_requerido: g?.progreso_requerido ?? null
+    };
+  });
+
+  const idsActividadSet = new Set();
+  progresos.forEach((p) => {
+    if (p.actividad_id != null) idsActividadSet.add(Number(p.actividad_id));
+  });
+  sesiones.forEach((s) => {
+    if (s.actividad_id != null) idsActividadSet.add(Number(s.actividad_id));
+  });
+  const idsActividadArr = [...idsActividadSet].filter((x) => Number.isFinite(x));
+  const actividadNombres = {};
+  if (idsActividadArr.length > 0) {
+    const filasNom = await Actividades.findAll({
+      where: { id: { [Op.in]: idsActividadArr } },
+      attributes: ['id', 'nombre'],
+      raw: true
+    });
+    filasNom.forEach((row) => {
+      const id = Number(row.id);
+      actividadNombres[id] = row.nombre ? String(row.nombre).trim() : `Actividad ${id}`;
+    });
+  }
+
+  let historialAccesos = [];
+  try {
+    if (AccesosPlataformaEstudiante) {
+      const accesosRows = await AccesosPlataformaEstudiante.findAll({
+        where: { estudiante_id: est.id },
+        order: [['fecha_hora', 'DESC']],
+        limit: 500,
+        attributes: ['id', 'fecha_hora', 'ip_address', 'user_agent'],
+        raw: true
+      });
+      historialAccesos = accesosRows.map((r) => ({
+        id: r.id,
+        fecha_hora:
+          r.fecha_hora instanceof Date
+            ? r.fecha_hora.toISOString()
+            : r.fecha_hora
+              ? String(r.fecha_hora)
+              : null,
+        ip_address: r.ip_address || null,
+        user_agent: r.user_agent || null
+      }));
+    }
+  } catch (histErr) {
+    console.warn('buildReporteDetalleData historialAccesos:', histErr.message);
+  }
+
   const estudiantePayload = {
     id: est.id,
     nombre: est.nombre,
@@ -272,8 +381,11 @@ async function buildReporteDetalleData(estudiante_id, query) {
       actividades: actividadesDetalladas,
       sesionesPorActividadId,
       insignias: insigniasDetalladas,
+      catalogoInsignias,
       catalogoLecturas,
       catalogoJuegos,
+      historialAccesos,
+      actividadNombres,
       resumen
     }
   };
@@ -324,7 +436,7 @@ exports.reporteEstudiantes = async (req, res) => {
 
     const resultado = estudiantes.map((est) => {
       const list = porEstudiante.get(est.id) || [];
-      const completadas = list.filter((p) => p.completado);
+      const completadas = list.filter((p) => actividadCompletada(p));
       const lecturasCompletadas = completadas.filter((p) => p.actividad?.tipo_actividad_id === 1).length;
       const juegosCompletados = completadas.filter((p) => p.actividad?.tipo_actividad_id === 2).length;
       const puntosTotales = list.reduce((sum, p) => sum + (p.puntuacion || 0), 0);

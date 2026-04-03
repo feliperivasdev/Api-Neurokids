@@ -91,6 +91,40 @@ exports.getMeEstudiante = async (req, res, next) => {
     }
 };
 
+/** POST — token JWT de estudiante (sin campo `role`). Registra acceso al panel con antiduplicado ~25 min. */
+exports.registrarVisitaEstudiante = async (req, res, next) => {
+    try {
+        if (req.usuario?.role) {
+            return res.status(403).json({
+                success: false,
+                message: 'Esta acción solo aplica a la sesión de estudiante'
+            });
+        }
+        const estudianteId = req.usuario?.id;
+        if (!estudianteId) {
+            return res.status(401).json({
+                success: false,
+                message: 'No autorizado'
+            });
+        }
+        const forwarded = req.headers['x-forwarded-for'];
+        const ipFromHeader = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null;
+        const ip = ipFromHeader || req.ip || req.socket?.remoteAddress || null;
+        const userAgent = req.headers['user-agent'] || null;
+        const data = await authService.registrarVisitaEstudiante(estudianteId, { ip, userAgent });
+        return res.status(200).json({
+            success: true,
+            data
+        });
+    } catch (error) {
+        console.error('Error en registrarVisitaEstudiante:', error);
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 exports.registrarEstudiante = async (req, res, next) => {
     try {
         const datosEstudiante = req.body;
