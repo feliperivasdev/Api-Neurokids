@@ -1,8 +1,23 @@
 const axios = require('axios');
 
 const PROVIDER = process.env.IA_PROVIDER || 'claude';
-const API_KEY = process.env.IA_API_KEY;
 const MODEL = process.env.IA_MODEL;
+
+// Cargar múltiples API keys para fallback
+function cargarApiKeys() {
+  const keys = [];
+  const mainKey = process.env.IA_API_KEY;
+  const backup1 = process.env.IA_API_KEY_BACKUP_1;
+  const backup2 = process.env.IA_API_KEY_BACKUP_2;
+
+  if (mainKey) keys.push(mainKey);
+  if (backup1) keys.push(backup1);
+  if (backup2) keys.push(backup2);
+
+  return keys;
+}
+
+const API_KEYS = cargarApiKeys();
 
 function buildPrompt(edad, tema, minPalabras, maxPalabras) {
   return `Eres un especialista en educación inclusiva y literacidad infantil. Crea una lectura enganchante y coherente para un niño de ${edad} años sobre el tema "${tema}".
@@ -60,7 +75,7 @@ Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin markdown
 }
 
 
-async function llamarClaude(prompt) {
+async function llamarClaude(prompt, apiKey) {
   const model = MODEL || 'claude-opus-4-5';
   const resp = await axios.post(
     'https://api.anthropic.com/v1/messages',
@@ -71,7 +86,7 @@ async function llamarClaude(prompt) {
     },
     {
       headers: {
-        'x-api-key': API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json'
       },
@@ -81,7 +96,7 @@ async function llamarClaude(prompt) {
   return resp.data.content[0].text;
 }
 
-async function llamarOpenAI(prompt) {
+async function llamarOpenAI(prompt, apiKey) {
   const model = MODEL || 'gpt-4o-mini';
   const resp = await axios.post(
     'https://api.openai.com/v1/chat/completions',
@@ -92,7 +107,7 @@ async function llamarOpenAI(prompt) {
     },
     {
       headers: {
-        'Authorization': `Bearer ${API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'content-type': 'application/json'
       },
       timeout: 45000
@@ -101,7 +116,7 @@ async function llamarOpenAI(prompt) {
   return resp.data.choices[0].message.content;
 }
 
-async function llamarGroq(prompt) {
+async function llamarGroq(prompt, apiKey) {
   const model = MODEL || 'llama-3-8b-8192';
   try {
     const resp = await axios.post(
@@ -113,7 +128,7 @@ async function llamarGroq(prompt) {
       },
       {
         headers: {
-          'Authorization': `Bearer ${API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'content-type': 'application/json'
         },
         timeout: 45000
@@ -128,10 +143,10 @@ async function llamarGroq(prompt) {
   }
 }
 
-async function llamarGemini(prompt) {
+async function llamarGemini(prompt, apiKey) {
   const model = MODEL || 'gemini-2.0-flash';
   const resp = await axios.post(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       contents: [{ parts: [{ text: prompt }] }]
     },
@@ -143,9 +158,46 @@ async function llamarGemini(prompt) {
   return resp.data.candidates[0].content.parts[0].text;
 }
 
+async function llamarConFallback(prompt, providerFn) {
+  if (API_KEYS.length === 0) {
+    throw new Error(`No hay API keys configuradas para ${PROVIDER}`);
+  }
+
+  let ultimoError = null;
+
+  for (let i = 0; i < API_KEYS.length; i++) {
+    const apiKey = API_KEYS[i];
+    const keyMascarada = `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 5)}`;
+
+    try {
+      console.log(`[IA] Intentando con API key ${i + 1}/${API_KEYS.length} (${keyMascarada})...`);
+      const resultado = await providerFn(prompt, apiKey);
+      console.log(`[IA] Éxito con API key ${i + 1} (${keyMascarada})`);
+      return resultado;
+    } catch (err) {
+      ultimoError = err;
+      console.warn(`[IA] Falló API key ${i + 1} (${keyMascarada}): ${err.message}`);
+
+      // Si es el último intento, lanzar el error
+      if (i === API_KEYS.length - 1) {
+        throw new Error(`Falló con todas las API keys. Último error: ${ultimoError.message}`);
+      }
+      // Si no es el último, continuar al siguiente
+    }
+  }
+}
+
 function parsearRespuestaIA(texto) {
   try {
-    const limpio = texto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    // Remove markdown code blocks
+    let limpio = texto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    // Fix unescaped newlines inside JSON string values
+    // This regex finds quoted strings and replaces internal literal newlines with escaped \n
+    limpio = limpio.replace(/"((?:[^"\\]|\\.)*)"/g, (match) => {
+      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+    });
+    
     const data = JSON.parse(limpio);
 
     if (!data.titulo || !data.contenido || !Array.isArray(data.preguntas)) {
@@ -171,20 +223,20 @@ function parsearRespuestaIA(texto) {
 }
 
 async function generarLecturaConPreguntas({ edad, tema, minPalabras, maxPalabras }) {
-  if (!API_KEY) throw new Error('IA_API_KEY no configurada en variables de entorno');
+  if (API_KEYS.length === 0) throw new Error('No hay IA_API_KEY configurada en variables de entorno');
 
   const prompt = buildPrompt(edad, tema, minPalabras, maxPalabras);
   let textoRespuesta;
 
   try {
     if (PROVIDER === 'openai') {
-      textoRespuesta = await llamarOpenAI(prompt);
+      textoRespuesta = await llamarConFallback(prompt, llamarOpenAI);
     } else if (PROVIDER === 'gemini') {
-      textoRespuesta = await llamarGemini(prompt);
+      textoRespuesta = await llamarConFallback(prompt, llamarGemini);
     } else if (PROVIDER === 'groq') {
-      textoRespuesta = await llamarGroq(prompt);
+      textoRespuesta = await llamarConFallback(prompt, llamarGroq);
     } else {
-      textoRespuesta = await llamarClaude(prompt);
+      textoRespuesta = await llamarConFallback(prompt, llamarClaude);
     }
   } catch (err) {
     console.error(`Error en proveedor IA ${PROVIDER}:`, err.message);
