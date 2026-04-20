@@ -268,7 +268,8 @@ async function verificarEvaluacionInicial(estudiante_id) {
   const resultado = await ResultadosEvaluacion.findOne({
     where: {
       estudiante_id,
-      evaluacion_id: evaluaciones.map(e => e.id)
+      evaluacion_id: evaluaciones.map(e => e.id),
+      completado: false  // Solo mostrar si NO está completado
     }
   });
 
