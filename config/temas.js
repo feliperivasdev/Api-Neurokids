@@ -22,8 +22,8 @@ function getTemasParaGrupo(edadMinima) {
   return [...TEMAS_BASE];
 }
 
-function esTemValido(tema, edadMinima) {
+function esTemaValido(tema, edadMinima) {
   return getTemasParaGrupo(edadMinima).includes(tema);
 }
 
-module.exports = { getParamsPorEdad, getTemasParaGrupo, esTemValido };
+module.exports = { getParamsPorEdad, getTemasParaGrupo, esTemaValido };

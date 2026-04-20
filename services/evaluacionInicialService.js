@@ -1,6 +1,8 @@
+const crypto = require('crypto');
+const { Op } = require('sequelize');
 const db = require('../models');
 const { generarLecturaConPreguntas } = require('./iaGeneracionService');
-const { getParamsPorEdad, getTemasParaGrupo, esTemValido } = require('../config/temas');
+const { getParamsPorEdad, getTemasParaGrupo, esTemaValido } = require('../config/temas');
 
 const GruposEdad            = db.grupos_edad_model;
 const ParametrosGeneracion  = db.parametros_generacion_lectura_model;
@@ -19,15 +21,18 @@ async function getTemasDisponibles(grupoEdadId) {
 }
 
 async function setupEvaluacionInicial({ estudiante_id, edad, tema }) {
+  // --- Validations OUTSIDE transaction (read-only) ---
   const estudiante = await Estudiantes.findByPk(estudiante_id);
   if (!estudiante) throw { status: 404, message: 'Estudiante no encontrado' };
 
-  const grupoEdad = await GruposEdad.findOne({
-    where: db.sequelize.literal(`edad_minima <= ${parseInt(edad)} AND edad_maxima >= ${parseInt(edad)}`)
-  });
-  if (!grupoEdad) throw { status: 404, message: `No existe grupo de edad configurado para ${edad} años` };
+  const edadNum = parseInt(edad, 10);
 
-  if (!esTemValido(tema, grupoEdad.edad_minima)) {
+  const grupoEdad = await GruposEdad.findOne({
+    where: { edad_minima: { [Op.lte]: edadNum }, edad_maxima: { [Op.gte]: edadNum } }
+  });
+  if (!grupoEdad) throw { status: 404, message: `No existe grupo de edad configurado para ${edadNum} años` };
+
+  if (!esTemaValido(tema, grupoEdad.edad_minima)) {
     throw { status: 400, message: `Tema "${tema}" no válido para este grupo de edad` };
   }
 
@@ -43,25 +48,13 @@ async function setupEvaluacionInicial({ estudiante_id, edad, tema }) {
     if (yaExiste) throw { status: 409, message: 'El estudiante ya completó la evaluación inicial' };
   }
 
-  const params = getParamsPorEdad(edad);
-  const base = Date.now();
+  const params = getParamsPorEdad(edadNum);
 
-  const parametro = await ParametrosGeneracion.create({
-    id: base,
-    nombre: `Param-${estudiante_id}-${tema}-${base}`,
-    grupo_edad_id: grupoEdad.id,
-    nivel_lectura: params.nivelLectura,
-    temas_preferidos: [tema],
-    longitud_palabras: params.longitudPalabras,
-    tipo_narrativa: 'cuento',
-    dificultad_vocabulario: 'simple',
-    estado: true
-  });
-
+  // --- IA call OUTSIDE transaction (cannot rollback external calls) ---
   let iaResult;
   try {
     iaResult = await generarLecturaConPreguntas({
-      edad,
+      edad: edadNum,
       tema,
       minPalabras: params.minPalabras,
       maxPalabras: params.maxPalabras
@@ -78,100 +71,124 @@ async function setupEvaluacionInicial({ estudiante_id, edad, tema }) {
     process.env.IA_PROVIDER === 'gemini' ? 'gemini-1.5-flash' : 'claude-opus-4-5'
   );
 
-  const lectura = await LecturasGeneradas.create({
-    id: base + 1,
-    titulo: iaData.titulo,
-    contenido: iaData.contenido,
-    resumen: iaData.resumen,
-    parametro_generacion_id: parametro.id,
-    estudiante_id,
-    grupo_edad_id: grupoEdad.id,
-    nivel_lectura: params.nivelLectura,
-    temas_abordados: [tema],
-    numero_palabras: iaData.numero_palabras,
-    tiempo_lectura_estimado: iaData.tiempo_lectura_estimado,
-    modelo_ia_usado: providerModel,
-    prompt_generacion: iaResult.prompt,
-    estado: 'lista'
-  });
+  // --- ALL DB writes inside a Sequelize transaction ---
+  return await db.sequelize.transaction(async (t) => {
+    const base = crypto.randomInt(1e13, 9e13);
 
-  const evaluacion = await EvaluacionesIniciales.create({
-    id: base + 2,
-    nombre: `Actividad de lectura - ${tema}`,
-    grupo_edad_id: grupoEdad.id,
-    numero_preguntas: 5,
-    puntuacion_maxima: 5,
-    puntuacion_minima: 0,
-    estado: true,
-    orden_presentacion: 1
-  });
-
-  const preguntasCreadas = [];
-  for (const pIA of iaData.preguntas) {
-    const pregunta = await PreguntasEvaluacion.create({
-      id: base + 10 + pIA.orden_pregunta,
-      evaluacion_id: evaluacion.id,
-      pregunta: pIA.pregunta,
-      tipo_pregunta: 'multiple_choice',
-      puntuacion: 1,
-      orden_pregunta: pIA.orden_pregunta,
+    const parametro = await ParametrosGeneracion.create({
+      id: base,
+      nombre: `Param-${estudiante_id}-${tema}-${base}`,
+      grupo_edad_id: grupoEdad.id,
+      nivel_lectura: params.nivelLectura,
+      temas_preferidos: [tema],
+      longitud_palabras: params.longitudPalabras,
+      tipo_narrativa: 'cuento',
+      dificultad_vocabulario: 'simple',
       estado: true
-    });
+    }, { transaction: t });
 
-    const opcionesCreadas = [];
-    for (const oIA of pIA.opciones) {
-      const opcion = await OpcionesRespuesta.create({
-        id: base + 100 + pIA.orden_pregunta * 10 + oIA.orden_opcion,
-        pregunta_id: pregunta.id,
-        texto_opcion: oIA.texto_opcion,
-        es_correcta: oIA.es_correcta,
-        orden_opcion: oIA.orden_opcion
-      });
-      opcionesCreadas.push({
-        id: opcion.id,
-        texto_opcion: opcion.texto_opcion,
-        orden_opcion: opcion.orden_opcion
+    const lectura = await LecturasGeneradas.create({
+      id: base + 1,
+      titulo: iaData.titulo,
+      contenido: iaData.contenido,
+      resumen: iaData.resumen,
+      parametro_generacion_id: parametro.id,
+      estudiante_id,
+      grupo_edad_id: grupoEdad.id,
+      nivel_lectura: params.nivelLectura,
+      temas_abordados: [tema],
+      numero_palabras: iaData.numero_palabras,
+      tiempo_lectura_estimado: iaData.tiempo_lectura_estimado,
+      modelo_ia_usado: providerModel,
+      prompt_generacion: iaResult.prompt,
+      estado: 'lista'
+    }, { transaction: t });
+
+    const evaluacion = await EvaluacionesIniciales.create({
+      id: base + 2,
+      nombre: `Actividad de lectura - ${tema}`,
+      grupo_edad_id: grupoEdad.id,
+      numero_preguntas: 5,
+      puntuacion_maxima: 5,
+      puntuacion_minima: 0,
+      estado: true,
+      orden_presentacion: 1
+    }, { transaction: t });
+
+    const preguntasCreadas = [];
+    for (const pIA of iaData.preguntas) {
+      const pregunta = await PreguntasEvaluacion.create({
+        id: base + 10 + pIA.orden_pregunta,
+        evaluacion_id: evaluacion.id,
+        pregunta: pIA.pregunta,
+        tipo_pregunta: 'multiple_choice',
+        puntuacion: 1,
+        orden_pregunta: pIA.orden_pregunta,
+        estado: true
+      }, { transaction: t });
+
+      const opcionesCreadas = [];
+      for (const oIA of pIA.opciones) {
+        const opcion = await OpcionesRespuesta.create({
+          id: base + 100 + pIA.orden_pregunta * 10 + oIA.orden_opcion,
+          pregunta_id: pregunta.id,
+          texto_opcion: oIA.texto_opcion,
+          es_correcta: oIA.es_correcta,
+          orden_opcion: oIA.orden_opcion
+        }, { transaction: t });
+        opcionesCreadas.push({
+          id: opcion.id,
+          texto_opcion: opcion.texto_opcion,
+          orden_opcion: opcion.orden_opcion
+        });
+      }
+
+      preguntasCreadas.push({
+        id: pregunta.id,
+        pregunta: pregunta.pregunta,
+        orden_pregunta: pregunta.orden_pregunta,
+        opciones: opcionesCreadas
       });
     }
 
-    preguntasCreadas.push({
-      id: pregunta.id,
-      pregunta: pregunta.pregunta,
-      orden_pregunta: pregunta.orden_pregunta,
-      opciones: opcionesCreadas
-    });
-  }
+    const resultado = await ResultadosEvaluacion.create({
+      id: base + 200,
+      estudiante_id,
+      evaluacion_id: evaluacion.id,
+      puntuacion_total: 0,
+      puntuacion_maxima: 5,
+      completado: false
+    }, { transaction: t });
 
-  const resultado = await ResultadosEvaluacion.create({
-    id: base + 200,
-    estudiante_id,
-    evaluacion_id: evaluacion.id,
-    puntuacion_total: 0,
-    puntuacion_maxima: 5,
-    completado: false
+    return {
+      evaluacion_inicial_id: evaluacion.id,
+      resultado_evaluacion_id: resultado.id,
+      lectura: {
+        id: lectura.id,
+        titulo: lectura.titulo,
+        contenido: lectura.contenido,
+        resumen: lectura.resumen,
+        tiempo_lectura_estimado: lectura.tiempo_lectura_estimado
+      },
+      preguntas: preguntasCreadas
+    };
   });
-
-  return {
-    evaluacion_inicial_id: evaluacion.id,
-    resultado_evaluacion_id: resultado.id,
-    lectura: {
-      id: lectura.id,
-      titulo: lectura.titulo,
-      contenido: lectura.contenido,
-      resumen: lectura.resumen,
-      tiempo_lectura_estimado: lectura.tiempo_lectura_estimado
-    },
-    preguntas: preguntasCreadas
-  };
 }
 
-async function responderEvaluacion({ resultado_evaluacion_id, respuestas }) {
+async function responderEvaluacion({ resultado_evaluacion_id, respuestas, estudiante_id }) {
   const resultado = await ResultadosEvaluacion.findByPk(resultado_evaluacion_id);
   if (!resultado) throw { status: 404, message: 'Resultado de evaluación no encontrado' };
   if (resultado.completado) throw { status: 409, message: 'Esta evaluación ya fue completada' };
+  if (String(resultado.estudiante_id) !== String(estudiante_id)) {
+    throw { status: 403, message: 'No autorizado para responder esta evaluación' };
+  }
+
+  // Fetch evaluacion to get the real numero_preguntas (Fix 6)
+  const evaluacionInfo = await EvaluacionesIniciales.findByPk(resultado.evaluacion_id);
+  const totalPreguntas = evaluacionInfo ? evaluacionInfo.numero_preguntas : 5;
 
   let correctas = 0;
-  const base = Date.now();
+  const base = crypto.randomInt(1e13, 9e13);
 
   for (let i = 0; i < respuestas.length; i++) {
     const r = respuestas[i];
@@ -190,10 +207,11 @@ async function responderEvaluacion({ resultado_evaluacion_id, respuestas }) {
     });
   }
 
-  const porcentaje = parseFloat(((correctas / 5) * 100).toFixed(2));
+  const porcentaje = parseFloat(((correctas / totalPreguntas) * 100).toFixed(2));
 
   await resultado.update({
     puntuacion_total: correctas,
+    puntuacion_maxima: totalPreguntas,
     porcentaje_aciertos: porcentaje,
     completado: true,
     completado_at: new Date()
@@ -202,7 +220,7 @@ async function responderEvaluacion({ resultado_evaluacion_id, respuestas }) {
   return {
     completado: true,
     puntuacion_total: correctas,
-    puntuacion_maxima: 5,
+    puntuacion_maxima: totalPreguntas,
     porcentaje_aciertos: porcentaje
   };
 }
@@ -211,9 +229,9 @@ async function verificarEvaluacionInicial(estudiante_id) {
   const estudiante = await Estudiantes.findByPk(estudiante_id);
   if (!estudiante) throw { status: 404, message: 'Estudiante no encontrado' };
 
-  const edadEstudiante = parseInt(estudiante.edad || 0);
+  const edadEstudiante = parseInt(estudiante.edad || 0, 10);
   const grupoEdad = await GruposEdad.findOne({
-    where: db.sequelize.literal(`edad_minima <= ${edadEstudiante} AND edad_maxima >= ${edadEstudiante}`)
+    where: { edad_minima: { [Op.lte]: edadEstudiante }, edad_maxima: { [Op.gte]: edadEstudiante } }
   });
 
   if (!grupoEdad) return { tiene_evaluacion: false };
