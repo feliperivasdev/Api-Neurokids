@@ -90,6 +90,26 @@ async function llamarOpenAI(prompt) {
   return resp.data.choices[0].message.content;
 }
 
+async function llamarGroq(prompt) {
+  const model = MODEL || 'llama-3-8b-8192';
+  const resp = await axios.post(
+    'https://api.groq.com/openai/v1/chat/completions',
+    {
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 2048
+    },
+    {
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'content-type': 'application/json'
+      },
+      timeout: 45000
+    }
+  );
+  return resp.data.choices[0].message.content;
+}
+
 async function llamarGemini(prompt) {
   const model = MODEL || 'gemini-2.0-flash';
   const resp = await axios.post(
@@ -137,6 +157,8 @@ async function generarLecturaConPreguntas({ edad, tema, minPalabras, maxPalabras
     textoRespuesta = await llamarOpenAI(prompt);
   } else if (PROVIDER === 'gemini') {
     textoRespuesta = await llamarGemini(prompt);
+  } else if (PROVIDER === 'groq') {
+    textoRespuesta = await llamarGroq(prompt);
   } else {
     textoRespuesta = await llamarClaude(prompt);
   }
