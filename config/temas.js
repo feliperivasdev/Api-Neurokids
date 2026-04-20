@@ -2,8 +2,8 @@ const TEMAS_BASE = ['animales', 'naturaleza', 'familia', 'aventura', 'deportes',
 const TEMAS_AVANZADOS = ['historia', 'tecnología', 'medio ambiente'];
 
 const PARAMS_POR_EDAD = {
-  '5-6':   { minPalabras: 80,  maxPalabras: 120, nivelLectura: 'básico',      longitudPalabras: 'corta' },
-  '7-8':   { minPalabras: 120, maxPalabras: 180, nivelLectura: 'básico',      longitudPalabras: 'media' },
+  '5-6':   { minPalabras: 50,  maxPalabras: 80,  nivelLectura: 'básico',      longitudPalabras: 'corta' },
+  '7-8':   { minPalabras: 100, maxPalabras: 150, nivelLectura: 'básico',      longitudPalabras: 'media' },
   '9-10':  { minPalabras: 180, maxPalabras: 250, nivelLectura: 'intermedio',  longitudPalabras: 'media' },
   '11-12': { minPalabras: 250, maxPalabras: 350, nivelLectura: 'intermedio',  longitudPalabras: 'larga' },
 };

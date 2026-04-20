@@ -5,39 +5,47 @@ const API_KEY = process.env.IA_API_KEY;
 const MODEL = process.env.IA_MODEL;
 
 function buildPrompt(edad, tema, minPalabras, maxPalabras) {
-  return `Eres un especialista en literacidad infantil. Crea material de lectura y comprensión para un niño de ${edad} años sobre el tema "${tema}".
+  return `Eres un especialista en educación inclusiva y literacidad infantil. Crea una lectura enganchante y coherente para un niño de ${edad} años sobre el tema "${tema}".
 
-REGLAS ESTRICTAS DEL TEXTO:
-- Oraciones de máximo 8 palabras
-- Una idea por oración
-- Párrafos de máximo 3 oraciones
-- Vocabulario cotidiano, sin tecnicismos
-- Sin metáforas, refranes ni ironía
-- Sin referencias a dificultades de aprendizaje, terapias o condiciones médicas
+IMPORTANTE: Este texto será leído por niños con dislexia. Debe ser:
+✓ Coherente y narrativamente interesante (no primitivo)
+✓ Accesible: oraciones claras con estructura sujeto-verbo-objeto
+✓ Palabra por palabra comprensible, sin saltos conceptuales abruptos
+
+REGLAS DEL TEXTO:
+- Oraciones: máximo 12 palabras (pueden ser 6-12, según necesidad de coherencia)
+- Una idea principal por oración, con máximo una subordinada simple
+- Párrafos cortos (2-3 oraciones), con saltos de línea visibles
+- Vocabulario: cotidiano pero no condescendiente (usa palabras reales de edad ${edad})
+- PERMITIDO: conectores simples (y, pero, porque, entonces, cuando)
+- PROHIBIDO: metáforas, comparaciones complejas, ironía, humor implícito
+- Sin referencias médicas, terapéuticas o de "dificultades"
+- Historia con inicio claro, desarrollo coherente, desenlace satisfactorio
 - Entre ${minPalabras} y ${maxPalabras} palabras en total
-- Narrativa tipo cuento con inicio, nudo y desenlace claro
+- Ritmo: intercala oraciones cortas con un poco más largas (pero siempre claras)
 
-REGLAS DE PREGUNTAS:
-- Exactamente 5 preguntas de comprensión
-- Tipo opción múltiple, 4 opciones cada una
+REGLAS DE PREGUNTAS DE COMPRENSIÓN:
+- Exactamente 5 preguntas progresivas (fácil → difícil)
+- Opción múltiple, 4 opciones cada una
 - Solo 1 respuesta correcta por pregunta
-- Opciones cortas (máximo 6 palabras)
-- Preguntas literales (la respuesta está explícita en el texto)
-- Sin preguntas de inferencia ni de opinión personal
+- Opciones: máximo 8 palabras (pero natural)
+- Pregunta 1-2: recuperación directa del texto
+- Pregunta 3-4: orden de eventos o relaciones simples
+- Pregunta 5: deducción simple (causa-efecto obvio)
+- Sin "¿cuál NO es..." ni preguntas negativas
+- Las opciones incorrectas deben ser plausibles pero claramente distintas
 
-FORMATO DE RESPUESTA:
-Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin markdown.
-
+ESTRUCTURA ESPERADA DEL JSON:
 {
-  "titulo": "string",
-  "contenido": "string",
-  "resumen": "string con máximo 2 oraciones",
+  "titulo": "string (máximo 6 palabras, interesante)",
+  "contenido": "string (la lectura completa, formateada con saltos de línea)",
+  "resumen": "string (máximo 2 oraciones para docentes)",
   "numero_palabras": number,
-  "tiempo_lectura_estimado": number,
+  "tiempo_lectura_estimado": number (en minutos),
   "preguntas": [
     {
       "pregunta": "string",
-      "orden_pregunta": number,
+      "orden_pregunta": number (1-5),
       "opciones": [
         { "texto_opcion": "string", "es_correcta": false, "orden_opcion": 1 },
         { "texto_opcion": "string", "es_correcta": true,  "orden_opcion": 2 },
@@ -46,8 +54,11 @@ Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin markdown
       ]
     }
   ]
-}`;
 }
+
+Responde ÚNICAMENTE con JSON válido. Sin texto antes ni después. Sin markdown.`;
+}
+
 
 async function llamarClaude(prompt) {
   const model = MODEL || 'claude-opus-4-5';
