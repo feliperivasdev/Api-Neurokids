@@ -1,8 +1,8 @@
 const axios = require('axios');
 
 const PROVIDER = process.env.IA_PROVIDER || 'claude';
-const API_KEY  = process.env.IA_API_KEY;
-const MODEL    = process.env.IA_MODEL;
+const API_KEY = process.env.IA_API_KEY;
+const MODEL = process.env.IA_MODEL;
 
 function buildPrompt(edad, tema, minPalabras, maxPalabras) {
   return `Eres un especialista en literacidad infantil. Crea material de lectura y comprensión para un niño de ${edad} años sobre el tema "${tema}".
@@ -92,22 +92,29 @@ async function llamarOpenAI(prompt) {
 
 async function llamarGroq(prompt) {
   const model = MODEL || 'llama-3-8b-8192';
-  const resp = await axios.post(
-    'https://api.groq.com/openai/v1/chat/completions',
-    {
-      model,
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 2048
-    },
-    {
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'content-type': 'application/json'
+  try {
+    const resp = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 2048
       },
-      timeout: 45000
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+          'content-type': 'application/json'
+        },
+        timeout: 45000
+      }
+    );
+    return resp.data.choices[0].message.content;
+  } catch (err) {
+    if (err.response?.data) {
+      console.error('Error detallado de Groq:', JSON.stringify(err.response.data));
     }
-  );
-  return resp.data.choices[0].message.content;
+    throw err;
+  }
 }
 
 async function llamarGemini(prompt) {
@@ -126,25 +133,30 @@ async function llamarGemini(prompt) {
 }
 
 function parsearRespuestaIA(texto) {
-  const limpio = texto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-  const data = JSON.parse(limpio);
+  try {
+    const limpio = texto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const data = JSON.parse(limpio);
 
-  if (!data.titulo || !data.contenido || !Array.isArray(data.preguntas)) {
-    throw new Error('Respuesta IA incompleta: faltan campos requeridos');
-  }
-  if (data.preguntas.length !== 5) {
-    throw new Error(`Respuesta IA inválida: se esperaban 5 preguntas, llegaron ${data.preguntas.length}`);
-  }
-  for (const p of data.preguntas) {
-    if (!Array.isArray(p.opciones) || p.opciones.length !== 4) {
-      throw new Error('Respuesta IA inválida: cada pregunta debe tener 4 opciones');
+    if (!data.titulo || !data.contenido || !Array.isArray(data.preguntas)) {
+      throw new Error('Respuesta IA incompleta: faltan campos requeridos');
     }
-    const correctas = p.opciones.filter(o => o.es_correcta === true).length;
-    if (correctas !== 1) {
-      throw new Error('Respuesta IA inválida: cada pregunta debe tener exactamente 1 opción correcta');
+    if (data.preguntas.length !== 5) {
+      throw new Error(`Respuesta IA inválida: se esperaban 5 preguntas, llegaron ${data.preguntas.length}`);
     }
+    for (const p of data.preguntas) {
+      if (!Array.isArray(p.opciones) || p.opciones.length !== 4) {
+        throw new Error('Respuesta IA inválida: cada pregunta debe tener 4 opciones');
+      }
+      const correctas = p.opciones.filter(o => o.es_correcta === true).length;
+      if (correctas !== 1) {
+        throw new Error('Respuesta IA inválida: cada pregunta debe tener exactamente 1 opción correcta');
+      }
+    }
+    return data;
+  } catch (err) {
+    console.error('Error al parsear respuesta IA:', err.message, 'Texto recibido:', texto?.substring(0, 200));
+    throw err;
   }
-  return data;
 }
 
 async function generarLecturaConPreguntas({ edad, tema, minPalabras, maxPalabras }) {
@@ -153,14 +165,19 @@ async function generarLecturaConPreguntas({ edad, tema, minPalabras, maxPalabras
   const prompt = buildPrompt(edad, tema, minPalabras, maxPalabras);
   let textoRespuesta;
 
-  if (PROVIDER === 'openai') {
-    textoRespuesta = await llamarOpenAI(prompt);
-  } else if (PROVIDER === 'gemini') {
-    textoRespuesta = await llamarGemini(prompt);
-  } else if (PROVIDER === 'groq') {
-    textoRespuesta = await llamarGroq(prompt);
-  } else {
-    textoRespuesta = await llamarClaude(prompt);
+  try {
+    if (PROVIDER === 'openai') {
+      textoRespuesta = await llamarOpenAI(prompt);
+    } else if (PROVIDER === 'gemini') {
+      textoRespuesta = await llamarGemini(prompt);
+    } else if (PROVIDER === 'groq') {
+      textoRespuesta = await llamarGroq(prompt);
+    } else {
+      textoRespuesta = await llamarClaude(prompt);
+    }
+  } catch (err) {
+    console.error(`Error en proveedor IA ${PROVIDER}:`, err.message);
+    throw err;
   }
 
   return { data: parsearRespuestaIA(textoRespuesta), prompt };
