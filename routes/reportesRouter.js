@@ -11,6 +11,13 @@ const { verificarToken, verificarAdminODocente } = require('../middleware/authMi
 router.get('/estudiantes', verificarToken, verificarAdminODocente, reportesController.reporteEstudiantes);
 
 router.get(
+  '/analisis-general',
+  // verificarToken,
+  // verificarAdminODocente,
+  reportesController.analisisGeneral
+);
+
+router.get(
 
   '/estudiantes/:estudiante_id/detalle',
 

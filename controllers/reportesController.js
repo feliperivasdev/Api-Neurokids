@@ -3,6 +3,7 @@ const db = require('../models');
 const Estudiantes = db.estudiantes_model;
 const Institucion = db.instituciones_model;
 const ProgresoActividades = db.progreso_actividades_model;
+const ProgresoLecturas = db.progreso_lecturas_model;
 const SesionesActividad = db.sesiones_actividad_model;
 const Actividades = db.actividades_model;
 const GruposEdad = db.grupos_edad_model;
@@ -418,27 +419,65 @@ exports.reporteEstudiantes = async (req, res) => {
     });
 
     const ids = estudiantes.map((e) => e.id);
+    const idsNumericos = ids.map((id) => Number(id)).filter((id) => Number.isFinite(id));
     if (ids.length === 0) {
       return res.status(200).json({ success: true, data: { estudiantes: [] } });
     }
 
     const progresos = await ProgresoActividades.findAll({
-      where: { estudiante_id: ids },
+      where: { estudiante_id: idsNumericos },
       include: [{ model: Actividades, as: 'actividad', attributes: ['id', 'nombre', 'tipo_actividad_id', 'grupo_edad_id', 'nivel'] }]
+    });
+
+    const sesiones = await SesionesActividad.findAll({
+      where: { estudiante_id: idsNumericos },
+      include: [{ model: Actividades, as: 'actividad', attributes: ['id', 'tipo_actividad_id'] }],
+      attributes: ['estudiante_id', 'actividad_id'],
+      raw: false
     });
 
     const porEstudiante = new Map();
     progresos.forEach((p) => {
-      const sid = p.estudiante_id;
+      const sid = Number(p.estudiante_id);
+      if (!Number.isFinite(sid)) return;
       if (!porEstudiante.has(sid)) porEstudiante.set(sid, []);
       porEstudiante.get(sid).push(p);
     });
 
+    const usosPorEstudiante = new Map();
+    idsNumericos.forEach((id) => {
+      usosPorEstudiante.set(id, {
+        lecturas: new Set(),
+        juegos: new Set()
+      });
+    });
+
+    sesiones.forEach((s) => {
+      const estudianteId = Number(s.estudiante_id);
+      const actividadId = Number(s.actividad_id);
+      if (!Number.isFinite(estudianteId) || !Number.isFinite(actividadId)) return;
+
+      const usos = usosPorEstudiante.get(estudianteId);
+      if (!usos) return;
+
+      const tipo = Number(s.actividad?.tipo_actividad_id);
+      if (tipo === 1) usos.lecturas.add(actividadId);
+      if (tipo === 2) usos.juegos.add(actividadId);
+    });
+
     const resultado = estudiantes.map((est) => {
-      const list = porEstudiante.get(est.id) || [];
+      const estId = Number(est.id);
+      const list = porEstudiante.get(estId) || [];
       const completadas = list.filter((p) => actividadCompletada(p));
       const lecturasCompletadas = completadas.filter((p) => p.actividad?.tipo_actividad_id === 1).length;
       const juegosCompletados = completadas.filter((p) => p.actividad?.tipo_actividad_id === 2).length;
+      const usos = usosPorEstudiante.get(estId);
+      const lecturasUsadasPorSesion = usos?.lecturas?.size ?? 0;
+      const juegosUsadosPorSesion = usos?.juegos?.size ?? 0;
+      const lecturasUsadasPorProgreso = list.filter((p) => p.actividad?.tipo_actividad_id === 1).length;
+      const juegosUsadosPorProgreso = list.filter((p) => p.actividad?.tipo_actividad_id === 2).length;
+      const lecturasUsadas = Math.max(lecturasUsadasPorSesion, lecturasUsadasPorProgreso);
+      const juegosUsados = Math.max(juegosUsadosPorSesion, juegosUsadosPorProgreso);
       const puntosTotales = list.reduce((sum, p) => sum + (p.puntuacion || 0), 0);
       const ultima = list.reduce((max, p) => {
         const t = p.ultima_interaccion ? new Date(p.ultima_interaccion).getTime() : 0;
@@ -459,6 +498,8 @@ exports.reporteEstudiantes = async (req, res) => {
           completadas: completadas.length,
           lecturas_completadas: lecturasCompletadas,
           juegos_completados: juegosCompletados,
+          lecturas_usadas: lecturasUsadas,
+          juegos_usados: juegosUsados,
           puntos_totales: puntosTotales,
           ultima_interaccion: ultima ? new Date(ultima).toISOString() : null
         }
@@ -502,6 +543,322 @@ exports.reporteMiDetalleEstudiante = async (req, res) => {
     return res.status(200).json(out);
   } catch (error) {
     console.error('Error en reporteMiDetalleEstudiante:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /reportes/analisis-general
+exports.analisisGeneral = async (req, res) => {
+  try {
+    // Calcular a partir de todos los estudiantes registrados, sin filtrar por institución.
+    const estudiantes = await Estudiantes.findAll({
+      attributes: ['id', 'nombre', 'apellido']
+    });
+
+    const idEstudiantes = estudiantes.map(e => e.id);
+    
+    if (idEstudiantes.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          analisis: {
+            totalEstudiantes: 0,
+            estudiantesConLecturas: 0,
+            estudiantesConJuegos: 0,
+            estudiantesAmbos: 0,
+            estudiantesSoloLecturas: 0,
+            estudiantesSoloJuegos: 0,
+            completacionesLecturas: 0,
+            completacionesJuegos: 0,
+            totalCompletaciones: 0,
+            lecturasPorcentaje: 0,
+            juegosPorcentaje: 0,
+            sesionesLecturasTotales: 0,
+            sesionesJuegosTotales: 0,
+            sesionesTotales: 0,
+            actividadSesiones: [],
+            lecturas: [],
+            juegos: []
+          }
+        }
+      });
+    }
+
+    // Obtener todos los progresos de actividades
+    const progresos = await ProgresoActividades.findAll({
+      where: { estudiante_id: idEstudiantes },
+      include: [{
+        model: Actividades,
+        as: 'actividad',
+        attributes: ['id', 'nombre', 'tipo_actividad_id', 'grupo_edad_id', 'nivel']
+      }]
+    });
+
+    // Obtener todos los progresos de lecturas por estudiante
+    const lecturasProgreso = await ProgresoLecturas.findAll({
+      where: { estudiante_id: idEstudiantes },
+      attributes: ['estudiante_id', 'completado'],
+      raw: true
+    });
+    const estudiantesLecturaSet = new Set(
+      lecturasProgreso.map((p) => Number(p.estudiante_id)).filter((id) => Number.isFinite(id))
+    );
+
+    // Obtener todas las sesiones de actividad para el conjunto de estudiantes
+    const sesiones = await SesionesActividad.findAll({
+      where: { estudiante_id: idEstudiantes },
+      include: [{
+        model: Actividades,
+        as: 'actividad',
+        attributes: ['id', 'nombre', 'tipo_actividad_id']
+      }]
+    });
+
+    const normalizeText = (value) =>
+      String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+    const gameKeywords = [
+      'bingo de palabras',
+      'caza la silaba',
+      'caza la sílaba',
+      'elige y escucha',
+      'construye la frase',
+      'laberinto lector',
+      'ordena la historia',
+      'cohete lector',
+      'detective de palabras',
+      'detective palabras',
+      'preguntas inferenciales'
+    ].map(normalizeText);
+    const lecturaKeywords = [
+      'biografias sencillas',
+      'biografías sencillas',
+      'cuento interact',
+      'noticias para niños',
+      'noticias para ninos',
+      'historias interactivas',
+      'mini aventuras',
+      'revista infantil',
+      'cuentos con pictogramas',
+      'mi primera palabra',
+      'frases magicas',
+      'frases mágicas'
+    ].map(normalizeText);
+
+    let sesionesLecturasTotales = 0;
+    let sesionesJuegosTotales = 0;
+    const sesionesPorActividadMap = new Map();
+    const estudiantesJuegoEspecificoSet = new Set();
+    const estudiantesLecturasSesionesSet = new Set();
+    const estudiantesJuegosSesionesSet = new Set();
+    const estudiantesPorActividadSesionesMap = new Map();
+
+    sesiones.forEach((s) => {
+      if (!s.actividad) return;
+      const actId = Number(s.actividad.id);
+      const nombreRaw = String(s.actividad.nombre || `Actividad ${actId}`).trim();
+      const nombre = nombreRaw;
+      const tipo = Number(s.actividad.tipo_actividad_id ?? s.actividad.dataValues?.tipo_actividad_id);
+      const nombreNormalized = normalizeText(nombreRaw);
+      const estudianteId = Number(s.estudiante_id ?? s.dataValues?.estudiante_id);
+      if (!Number.isFinite(estudianteId)) return;
+      if (!estudiantesPorActividadSesionesMap.has(actId)) {
+        estudiantesPorActividadSesionesMap.set(actId, new Set());
+      }
+      estudiantesPorActividadSesionesMap.get(actId).add(estudianteId);
+
+      let tipoNombre = 'otro';
+      let tipoActividadId = Number.isFinite(tipo) ? tipo : 0;
+      if (gameKeywords.some((keyword) => nombreNormalized.includes(keyword)) || tipo === 2) {
+        tipoNombre = 'juego';
+        tipoActividadId = 2;
+        estudiantesJuegoEspecificoSet.add(estudianteId);
+        estudiantesJuegosSesionesSet.add(estudianteId);
+      } else if (lecturaKeywords.some((keyword) => nombreNormalized.includes(keyword)) || tipo === 1) {
+        tipoNombre = 'lectura';
+        tipoActividadId = 1;
+        estudiantesLecturasSesionesSet.add(estudianteId);
+      }
+
+      if (tipo === 1) {
+        estudiantesLecturasSesionesSet.add(estudianteId);
+      }
+      if (tipo === 2) {
+        estudiantesJuegosSesionesSet.add(estudianteId);
+      }
+
+      const existing = sesionesPorActividadMap.get(actId) || {
+        id: actId,
+        nombre,
+        tipo_actividad_id: tipoActividadId,
+        tipo: tipoNombre,
+        sesiones: 0
+      };
+      existing.sesiones += 1;
+      sesionesPorActividadMap.set(actId, existing);
+
+      if (tipoNombre === 'lectura') sesionesLecturasTotales += 1;
+      else if (tipoNombre === 'juego') sesionesJuegosTotales += 1;
+    });
+
+    const actividadSesiones = Array.from(sesionesPorActividadMap.values()).sort(
+      (a, b) => b.sesiones - a.sesiones
+    );
+
+    // Rastrear por estudiante qué tipos de actividades usó
+    const estudianteActividades = new Map();
+    idEstudiantes.forEach(id => {
+      estudianteActividades.set(id, {
+        usoLectura: false,
+        usoJuego: false
+      });
+    });
+
+    // Agrupar por actividad
+    const actividadesMap = new Map();
+    progresos.forEach(p => {
+      if (!p.actividad) return;
+      const actId = p.actividad.id;
+      if (!actividadesMap.has(actId)) {
+        actividadesMap.set(actId, {
+          id: actId,
+          nombre: p.actividad.nombre,
+          tipo_actividad_id: p.actividad.tipo_actividad_id,
+          tipo: p.actividad.tipo_actividad_id === 1 ? 'lectura' : (p.actividad.tipo_actividad_id === 2 ? 'juego' : 'otro'),
+          grupo_edad_id: p.actividad.grupo_edad_id,
+          nivel: p.actividad.nivel,
+          usada_por: [],
+          completada_por: [],
+          total_intentos: 0
+        });
+      }
+      
+      const act = actividadesMap.get(actId);
+      act.total_intentos += 1;
+      if (!act.usada_por.includes(p.estudiante_id)) {
+        act.usada_por.push(p.estudiante_id);
+      }
+
+      // Marcar que el estudiante usó la actividad aunque no la haya completado
+      const estAct = estudianteActividades.get(p.estudiante_id);
+      if (estAct) {
+        if (p.actividad.tipo_actividad_id === 1) {
+          estAct.usoLectura = true;
+        } else if (p.actividad.tipo_actividad_id === 2) {
+          estAct.usoJuego = true;
+        }
+      }
+      
+      if (actividadCompletada(p)) {
+        if (!act.completada_por.includes(p.estudiante_id)) {
+          act.completada_por.push(p.estudiante_id);
+        }
+      }
+    });
+
+    sesionesPorActividadMap.forEach((sesionAct, actId) => {
+      if (!actividadesMap.has(actId)) {
+        actividadesMap.set(actId, {
+          id: sesionAct.id,
+          nombre: sesionAct.nombre,
+          tipo_actividad_id: sesionAct.tipo_actividad_id,
+          tipo: sesionAct.tipo,
+          grupo_edad_id: null,
+          nivel: null,
+          usada_por: [],
+          completada_por: [],
+          total_intentos: 0
+        });
+      }
+
+      const act = actividadesMap.get(actId);
+      const estudiantesSesion = estudiantesPorActividadSesionesMap.get(actId) || new Set();
+      estudiantesSesion.forEach((estudianteId) => {
+        if (!act.usada_por.includes(estudianteId)) {
+          act.usada_por.push(estudianteId);
+        }
+      });
+    });
+
+    // Marcar uso de lecturas también desde progreso_lecturas separado
+    lecturasProgreso.forEach((p) => {
+      const estAct = estudianteActividades.get(Number(p.estudiante_id));
+      if (estAct) {
+        estAct.usoLectura = true;
+      }
+    });
+
+    // Convertir a array y calcular estadísticas
+    const actividadesDetalle = Array.from(actividadesMap.values()).map(act => ({
+      id: act.id,
+      nombre: act.nombre,
+      tipo: act.tipo,
+      tipo_actividad_id: act.tipo_actividad_id,
+      grupo_edad_id: act.grupo_edad_id,
+      nivel: act.nivel,
+      estudiantes_usaron: act.usada_por.length,
+      estudiantes_completaron: act.completada_por.length,
+      total_intentos: act.total_intentos,
+      porcentaje_completacion: Math.round((act.completada_por.length / idEstudiantes.length) * 100)
+    }));
+
+    // Separar lecturas y juegos
+    const lecturas = actividadesDetalle.filter(a => a.tipo === 'lectura');
+    const juegos = actividadesDetalle.filter(a => a.tipo === 'juego');
+
+    // Contar completaciones por tipo
+    const completacionesLecturasFromActividades = lecturas.reduce((sum, l) => sum + l.estudiantes_completaron, 0);
+    const completacionesJuegos = juegos.reduce((sum, j) => sum + j.estudiantes_completaron, 0);
+    const completacionesLecturasFromLecturaProgreso = lecturasProgreso.filter((p) => p.completado).length;
+    const completacionesLecturas = completacionesLecturasFromActividades + completacionesLecturasFromLecturaProgreso;
+
+    // Contar estudiantes por categoría de uso
+    const estudiantesConLecturas = estudiantesLecturasSesionesSet.size;
+    const estudiantesConJuegos = estudiantesJuegosSesionesSet.size;
+    const estudiantesAmbos = [...estudiantesLecturasSesionesSet].filter((id) => estudiantesJuegosSesionesSet.has(id)).length;
+    const estudiantesSoloLecturas = [...estudiantesLecturasSesionesSet].filter((id) => !estudiantesJuegosSesionesSet.has(id)).length;
+    const estudiantesSoloJuegos = [...estudiantesJuegosSesionesSet].filter((id) => !estudiantesLecturasSesionesSet.has(id)).length;
+
+    const totalEstudiantes = idEstudiantes.length;
+    const lecturasPorcentaje = totalEstudiantes > 0 ? Math.round((estudiantesConLecturas / totalEstudiantes) * 100) : 0;
+    const juegosPorcentaje = totalEstudiantes > 0 ? Math.round((estudiantesConJuegos / totalEstudiantes) * 100) : 0;
+    const estudiantesConJuegosEspecificos = estudiantesJuegoEspecificoSet.size;
+    const estudiantesConSesionesLecturas = estudiantesLecturasSesionesSet.size;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        analisis: {
+          totalEstudiantes,
+          estudiantesConLecturas,
+          estudiantesConJuegos,
+          estudiantesAmbos,
+          estudiantesSoloLecturas,
+          estudiantesSoloJuegos,
+          estudiantesConJuegosEspecificos,
+          estudiantesConSesionesLecturas,
+          completacionesLecturas,
+          completacionesJuegos,
+          totalCompletaciones: completacionesLecturas + completacionesJuegos,
+          lecturasPorcentaje,
+          juegosPorcentaje,
+          sesionesLecturasTotales,
+          sesionesJuegosTotales,
+          sesionesTotales: sesionesLecturasTotales + sesionesJuegosTotales,
+          actividadSesiones,
+          lecturas: lecturas.sort((a, b) => b.estudiantes_usaron - a.estudiantes_usaron),
+          juegos: juegos.sort((a, b) => b.estudiantes_usaron - a.estudiantes_usaron),
+          actividadesDetalle
+        }
+      },
+      message: 'Análisis general generado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error en analisisGeneral:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 };

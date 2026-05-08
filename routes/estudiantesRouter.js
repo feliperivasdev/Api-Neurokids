@@ -9,4 +9,13 @@ router.get('/', verificarToken, verificarAdminODocente, estudiantesController.li
 // Obtener el perfil con sus puntos y logros incluidos
 router.get('/perfil/:id', estudiantesController.getPerfilCompleto);
 
+// Crear estudiante
+router.post('/', verificarToken, verificarAdminODocente, estudiantesController.crearEstudiante);
+
+// Actualizar estudiante
+router.put('/:id', verificarToken, verificarAdminODocente, estudiantesController.actualizarEstudiante);
+
+// Eliminar estudiante
+router.delete('/:id', verificarToken, verificarAdminODocente, estudiantesController.eliminarEstudiante);
+
 module.exports = router;

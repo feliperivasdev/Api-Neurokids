@@ -111,3 +111,218 @@ exports.listarEstudiantes = async (req, res) => {
         });
     }
 };
+
+// Crear estudiante (admin o docente)
+exports.crearEstudiante = async (req, res) => {
+    try {
+        const { nombre, apellido, correo, edad, institucion_id } = req.body;
+
+        if (!nombre || !apellido) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nombre y apellido son requeridos'
+            });
+        }
+
+        const esAdministrador = req.usuario.rol_id === 1 || req.usuario.rol_nombre === 'administrador';
+        const targetInstitucionId = esAdministrador ? institucion_id : req.usuario.institucion_id;
+
+        if (!targetInstitucionId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Institución es requerida para crear el estudiante'
+            });
+        }
+
+        const institucion = await Institucion.findByPk(targetInstitucionId);
+        if (!institucion) {
+            return res.status(400).json({
+                success: false,
+                message: 'Institución no encontrada'
+            });
+        }
+
+        const estudianteExistente = await Estudiantes.findOne({
+            where: {
+                nombre: nombre.trim(),
+                apellido: apellido.trim(),
+                institucion_id: targetInstitucionId
+            }
+        });
+
+        if (estudianteExistente) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ya existe un estudiante con ese nombre y apellido en la misma institución'
+            });
+        }
+
+        if (correo) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo.trim())) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El correo electrónico no tiene un formato válido'
+                });
+            }
+
+            const correoExistente = await Estudiantes.findOne({
+                where: { correo: correo.trim().toLowerCase() }
+            });
+
+            if (correoExistente) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ya existe un estudiante con ese correo electrónico'
+                });
+            }
+        }
+
+        const nuevoEstudiante = await Estudiantes.create({
+            nombre: nombre.trim(),
+            apellido: apellido.trim(),
+            correo: correo ? correo.trim().toLowerCase() : null,
+            edad: edad !== undefined ? edad : null,
+            institucion_id: targetInstitucionId,
+            estado: true,
+            rol_id: 3
+        });
+
+        return res.status(201).json({
+            success: true,
+            data: nuevoEstudiante,
+            message: 'Estudiante creado exitosamente'
+        });
+    } catch (error) {
+        console.error('Error en crearEstudiante:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Actualizar estudiante
+exports.actualizarEstudiante = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nombre, apellido, correo, edad, institucion_id } = req.body;
+
+        const estudiante = await Estudiantes.findByPk(id);
+        if (!estudiante) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        // Verificar permisos: admin puede editar cualquier estudiante, docente solo de su institución
+        const esAdministrador = req.usuario.rol_id === 1 || req.usuario.rol_nombre === 'administrador';
+        if (!esAdministrador) {
+            const institucionDocente = req.usuario.institucion_id;
+            if (estudiante.institucion_id !== institucionDocente) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'No tienes permisos para editar este estudiante'
+                });
+            }
+        }
+
+        const datosActualizacion = {};
+
+        if (nombre !== undefined) {
+            datosActualizacion.nombre = nombre.trim();
+        }
+
+        if (apellido !== undefined) {
+            datosActualizacion.apellido = apellido.trim();
+        }
+
+        if (correo !== undefined) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo.trim())) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El correo electrónico no tiene un formato válido'
+                });
+            }
+            datosActualizacion.correo = correo.trim().toLowerCase();
+        }
+
+        if (edad !== undefined) {
+            datosActualizacion.edad = edad;
+        }
+
+        if (institucion_id !== undefined) {
+            // Solo admin puede cambiar institución
+            if (!esAdministrador) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'No tienes permisos para cambiar la institución del estudiante'
+                });
+            }
+            const institucion = await Institucion.findByPk(institucion_id);
+            if (!institucion) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Institución no encontrada'
+                });
+            }
+            datosActualizacion.institucion_id = institucion_id;
+        }
+
+        await estudiante.update(datosActualizacion);
+
+        return res.status(200).json({
+            success: true,
+            data: estudiante,
+            message: 'Estudiante actualizado exitosamente'
+        });
+    } catch (error) {
+        console.error('Error en actualizarEstudiante:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Eliminar estudiante
+exports.eliminarEstudiante = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const estudiante = await Estudiantes.findByPk(id);
+        if (!estudiante) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        // Verificar permisos: admin puede eliminar cualquier estudiante, docente solo de su institución
+        const esAdministrador = req.usuario.rol_id === 1 || req.usuario.rol_nombre === 'administrador';
+        if (!esAdministrador) {
+            const institucionDocente = req.usuario.institucion_id;
+            if (estudiante.institucion_id !== institucionDocente) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'No tienes permisos para eliminar este estudiante'
+                });
+            }
+        }
+
+        await estudiante.destroy();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Estudiante eliminado exitosamente'
+        });
+    } catch (error) {
+        console.error('Error en eliminarEstudiante:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
