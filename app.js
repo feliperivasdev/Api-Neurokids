@@ -17,6 +17,7 @@ var progresoActividadesRoutes = require('./routes/progreso_actividadesRouter');
 var progresoLecturasRoutes = require('./routes/progreso_lecturasRouter');
 var actividadesRoutes = require('./routes/actividadesRouter');
 var reportesRoutes = require('./routes/reportesRouter');
+var evaluacionesInicialesRoutes = require('./routes/evaluaciones_inicialesRouter');
 var institucionesAdminRoutes = require('./routes/institucionesAdminRouter');
 
 var app = express();
@@ -50,6 +51,7 @@ app.use('/progreso-actividades', progresoActividadesRoutes);
 app.use('/progreso-lecturas', progresoLecturasRoutes);
 app.use('/actividades', actividadesRoutes);
 app.use('/reportes', reportesRoutes);
+app.use('/evaluacion-inicial', evaluacionesInicialesRoutes);
 app.use('/instituciones-admin', institucionesAdminRoutes);
 
 // catch 404 and forward to error handler
