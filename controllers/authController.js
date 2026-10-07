@@ -20,7 +20,7 @@ exports.getInstituciones = async (req, res, next) => {
 
 exports.loginEstudiante = async (req, res, next) => {
     try {
-        // Debug logs
+       
         console.log('--- LOGIN DEBUG ---');
         console.log('Content-Type:', req.headers['content-type']);
         console.log('Body completo:', req.body);
@@ -91,7 +91,7 @@ exports.getMeEstudiante = async (req, res, next) => {
     }
 };
 
-/** POST — token JWT de estudiante (sin campo `role`). Registra acceso al panel con antiduplicado ~25 min. */
+
 exports.registrarVisitaEstudiante = async (req, res, next) => {
     try {
         if (req.usuario?.role) {
@@ -129,7 +129,7 @@ exports.registrarEstudiante = async (req, res, next) => {
     try {
         const datosEstudiante = req.body;
 
-        // Validar datos básicos requeridos
+
         if (!datosEstudiante.nombre || !datosEstudiante.apellido || !datosEstudiante.institucion_id) {
             return res.status(400).json({
                 success: false,
@@ -170,13 +170,13 @@ exports.logout = async (req, res, next) => {
     }
 };
 
-// ========== CONTROLADORES PARA DOCENTES ==========
+
 
 exports.registrarDocente = async (req, res, next) => {
     try {
         const datosDocente = req.body;
 
-        // Validar datos básicos requeridos
+
         if (!datosDocente.nombre || !datosDocente.correo || !datosDocente.contrasena || !datosDocente.institucion_id) {
             return res.status(400).json({
                 success: false,
@@ -209,7 +209,7 @@ exports.loginDocente = async (req, res, next) => {
 
         const { correo, contrasena } = req.body;
 
-        // Validar datos requeridos
+
         if (!correo || !contrasena) {
             return res.status(400).json({
                 success: false,
@@ -287,13 +287,12 @@ exports.actualizarPerfilDocente = async (req, res, next) => {
     }
 };
 
-// ========== CONTROLADORES PARA ADMINISTRADORES ==========
+
 
 exports.registrarAdministrador = async (req, res, next) => {
     try {
         const datosAdmin = req.body;
 
-        // Validar datos básicos requeridos
         if (!datosAdmin.nombre || !datosAdmin.correo || !datosAdmin.contrasena) {
             return res.status(400).json({
                 success: false,
@@ -326,7 +325,7 @@ exports.loginAdministrador = async (req, res, next) => {
 
         const { correo, contrasena } = req.body;
 
-        // Validar datos requeridos
+
         if (!correo || !contrasena) {
             return res.status(400).json({
                 success: false,

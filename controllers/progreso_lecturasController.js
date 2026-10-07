@@ -3,8 +3,7 @@ const ProgresoLecturas = db.progreso_lecturas_model;
 const LecturasGeneradas = db.lecturas_generadas_model;
 const Estudiantes = db.estudiantes_model;
 
-// Guardar o actualizar progreso de una lectura
-// POST /progreso-lecturas
+
 exports.guardarProgresoLectura = async (req, res) => {
     try {
         const {
@@ -97,8 +96,7 @@ exports.guardarProgresoLectura = async (req, res) => {
     }
 };
 
-// Obtener progreso de lecturas de un estudiante
-// GET /progreso-lecturas/estudiante/:estudiante_id
+
 exports.getProgresoLecturasEstudiante = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
@@ -137,8 +135,7 @@ exports.getProgresoLecturasEstudiante = async (req, res) => {
     }
 };
 
-// Obtener progreso específico de una lectura
-// GET /progreso-lecturas/lectura/:lectura_id/estudiante/:estudiante_id
+
 exports.getProgresoLectura = async (req, res) => {
     try {
         const { lectura_id, estudiante_id } = req.params;

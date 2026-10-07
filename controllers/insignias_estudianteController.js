@@ -2,7 +2,7 @@ const db = require('../models');
 const InsigniasEstudiante = db.insignias_estudiante_model;
 const Insignias = db.insignias_model;
 
-/** Una insignia cuenta como desbloqueada si el registro indica completado o alcanzó el progreso requerido */
+
 function insigniaDesbloqueada(reg) {
   if (!reg) return false;
   if (reg.completado === true) return true;
@@ -11,10 +11,6 @@ function insigniaDesbloqueada(reg) {
   return req > 0 && act >= req;
 }
 
-/**
- * GET /insignias-estudiante/estudiante/:estudiante_id/catalogo
- * Todas las insignias de la tabla `insignias` con estado desbloqueada/bloqueada según `insignias_estudiante`.
- */
 exports.getCatalogoInsigniasEstudiante = async (req, res) => {
   try {
     const { estudiante_id } = req.params;
@@ -23,7 +19,6 @@ exports.getCatalogoInsigniasEstudiante = async (req, res) => {
       return res.status(400).json({ success: false, message: 'estudiante_id inválido' });
     }
 
-    // Todas las filas de `insignias` (nombres y metadatos vienen de la BD)
     const catalogo = await Insignias.findAll({
       order: [
         ['orden_presentacion', 'ASC'],
@@ -80,7 +75,7 @@ exports.getInsigniasPorEstudiante = async (req, res) => {
             where: { estudiante_id: estudianteIdNum },
             include: [{
                 model: Insignias,
-                as: 'insignia' // Verifica que este alias coincida en tu modelo insignias_estudiante.js
+                as: 'insignia' 
             }]
         });
         res.status(200).json({ success: true, data: insignias });

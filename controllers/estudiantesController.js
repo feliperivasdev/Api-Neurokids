@@ -22,8 +22,7 @@ exports.getPerfilCompleto = async (req, res) => {
     }
 };
 
-// Listar estudiantes con paginación y filtros básicos
-// Si el usuario es docente, solo ve estudiantes de su institución; administradores ven todos
+
 exports.listarEstudiantes = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -34,19 +33,19 @@ exports.listarEstudiantes = async (req, res) => {
 
         const whereClause = {};
 
-        // Docente: restringir siempre a su institución; Admin: puede filtrar por query o ver todos
+
         const esAdministrador = req.usuario.rol_id === 1 || req.usuario.rol_nombre === 'administrador';
         if (esAdministrador) {
             if (queryInstitucionId) {
                 whereClause.institucion_id = queryInstitucionId;
             }
         } else {
-            // Docente: solo estudiantes de su institución
+       
             const institucionDocente = req.usuario.institucion_id;
             if (institucionDocente != null && institucionDocente !== undefined) {
                 whereClause.institucion_id = institucionDocente;
             } else {
-                // Docente sin institución asignada: devolver lista vacía
+              
                 return res.status(200).json({
                     success: true,
                     data: {
@@ -112,7 +111,7 @@ exports.listarEstudiantes = async (req, res) => {
     }
 };
 
-// Crear estudiante (admin o docente)
+
 exports.crearEstudiante = async (req, res) => {
     try {
         const { nombre, apellido, correo, edad, institucion_id } = req.body;
@@ -202,7 +201,7 @@ exports.crearEstudiante = async (req, res) => {
     }
 };
 
-// Actualizar estudiante
+
 exports.actualizarEstudiante = async (req, res) => {
     try {
         const { id } = req.params;
@@ -216,7 +215,7 @@ exports.actualizarEstudiante = async (req, res) => {
             });
         }
 
-        // Verificar permisos: admin puede editar cualquier estudiante, docente solo de su institución
+
         const esAdministrador = req.usuario.rol_id === 1 || req.usuario.rol_nombre === 'administrador';
         if (!esAdministrador) {
             const institucionDocente = req.usuario.institucion_id;
@@ -254,7 +253,7 @@ exports.actualizarEstudiante = async (req, res) => {
         }
 
         if (institucion_id !== undefined) {
-            // Solo admin puede cambiar institución
+        
             if (!esAdministrador) {
                 return res.status(403).json({
                     success: false,
@@ -287,7 +286,7 @@ exports.actualizarEstudiante = async (req, res) => {
     }
 };
 
-// Eliminar estudiante
+
 exports.eliminarEstudiante = async (req, res) => {
     try {
         const { id } = req.params;
@@ -300,7 +299,7 @@ exports.eliminarEstudiante = async (req, res) => {
             });
         }
 
-        // Verificar permisos: admin puede eliminar cualquier estudiante, docente solo de su institución
+     
         const esAdministrador = req.usuario.rol_id === 1 || req.usuario.rol_nombre === 'administrador';
         if (!esAdministrador) {
             const institucionDocente = req.usuario.institucion_id;

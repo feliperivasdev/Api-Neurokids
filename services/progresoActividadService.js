@@ -1,4 +1,4 @@
-// progresoActividadService.js
+
 
 class ProgresoActividadService {
     constructor() {

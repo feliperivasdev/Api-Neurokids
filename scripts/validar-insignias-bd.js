@@ -1,8 +1,4 @@
-/**
- * Revisa coherencia entre `insignias`, `criterios_insignias` y `actividades`.
- * Uso (desde la raíz del proyecto API): node scripts/validar-insignias-bd.js
- * Requiere `config/config.json` (o DATABASE_URL según tu entorno).
- */
+
 'use strict';
 
 const path = require('path');

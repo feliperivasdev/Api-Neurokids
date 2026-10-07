@@ -1,24 +1,3 @@
-/**
- * Evalúa y otorga insignias según la tabla `criterios_insignias` cuando el estudiante
- * completa actividades (progreso_actividades).
- *
- * Tipos soportados en `tipo_criterio` (minúsculas, se normalizan):
- * - completar_actividad | actividad_completada
- *   Requiere `condicion_adicional` JSON: { "actividad_id": <id> } (la actividad recién completada debe coincidir).
- * - primera_actividad_completada | primera_actividad
- *   Se otorga cuando el total de actividades completadas del estudiante es exactamente 1 (esta sesión).
- * - primer_juego | primera_actividad_tipo_juego
- *   Primera actividad de tipo juego (tipo_actividad_id = 2) completada.
- * - primera_lectura | primer_lectura | primera_actividad_tipo_lectura
- *   Primera actividad de tipo lectura (tipo_actividad_id = 1) completada.
- * - completar_actividades | cantidad_actividades
- *   Cuenta actividades completadas; opcionalmente filtra por `tipo_actividad_id` y/o `grupo_edad_id` del criterio.
- *   `valor_requerido` = cantidad necesaria. Si aún no alcanza, actualiza progreso_actual / progreso_requerido en insignias_estudiante.
- *
- * Si `condicion_adicional` solo trae `actividad_id` y el tipo es desconocido, se trata como completar_actividad.
- *
- * Registra notificación (notificaciones_estudiante) y actualiza logros_estudiante al desbloquear.
- */
 
 const { Op } = require('sequelize');
 const db = require('../models');
@@ -43,7 +22,6 @@ function parseCondicion(cond) {
   return cond;
 }
 
-/** Evita fallos si Sequelize devuelve BigInt o getters raros en id/tipo. */
 function normalizeActividad(actividad) {
   if (!actividad) return null;
   const plain =
@@ -60,10 +38,7 @@ function normalizeActividad(actividad) {
   };
 }
 
-/**
- * Criterios que significan "completar esta(s) actividad(es) concreta(s)".
- * Varios de estos para la misma insignia se evalúan en OR (completar A o B desbloquea).
- */
+
 function isCriterioCompletarActividadConcreta(criterio) {
   const tipo = String(criterio.tipo_criterio || '')
     .toLowerCase()
@@ -92,9 +67,6 @@ function isCriterioCompletarActividadConcreta(criterio) {
   return cond.actividad_id != null;
 }
 
-/**
- * Cuenta filas en progreso_actividades con completado=true, con filtros opcionales sobre la actividad relacionada.
- */
 async function contarActividadesCompletadas(estudianteIdNum, filters = {}) {
   const { tipo_actividad_id, grupo_edad_id } = filters;
   const includeWhere = {};
@@ -122,7 +94,7 @@ async function contarActividadesCompletadas(estudianteIdNum, filters = {}) {
   });
 }
 
-/** Actividades completadas con 0 respuestas incorrectas (o null). */
+
 async function contarActividadesCompletadasSinErrores(estudianteIdNum, filters = {}) {
   const { tipo_actividad_id, grupo_edad_id } = filters;
   const includeWhere = {};
@@ -151,9 +123,7 @@ async function contarActividadesCompletadasSinErrores(estudianteIdNum, filters =
   });
 }
 
-/**
- * Evalúa un criterio contra el contexto actual (sin await salvo completar_actividades).
- */
+
 async function evaluarCriterio(criterio, ctx) {
   const tipo = String(criterio.tipo_criterio || '')
     .toLowerCase()
@@ -199,7 +169,7 @@ async function evaluarCriterio(criterio, ctx) {
       };
     case 'completar_actividades':
     case 'cantidad_actividades':
-    /** Alias usado en muchas bases existentes */
+
     case 'actividades_completadas': {
       const n = await contarActividadesCompletadas(ctx.estudianteId, {
         tipo_actividad_id: tipoActCriterio != null ? tipoActCriterio : undefined,
@@ -210,7 +180,7 @@ async function evaluarCriterio(criterio, ctx) {
         progresoParcial: { actual: n, requerido: valorReq }
       };
     }
-    /** Cuenta solo lecturas (tipo_actividad_id = 1); la fila del criterio puede afinar grupo_edad_id. */
+
     case 'lecturas_completadas': {
       const n = await contarActividadesCompletadas(ctx.estudianteId, {
         tipo_actividad_id: tipoActCriterio != null ? tipoActCriterio : 1,
@@ -221,7 +191,7 @@ async function evaluarCriterio(criterio, ctx) {
         progresoParcial: { actual: n, requerido: valorReq }
       };
     }
-    /** Actividades completadas sin respuestas incorrectas. */
+
     case 'sin_errores': {
       const n = await contarActividadesCompletadasSinErrores(ctx.estudianteId, {
         tipo_actividad_id: tipoActCriterio != null ? tipoActCriterio : undefined,
@@ -232,7 +202,7 @@ async function evaluarCriterio(criterio, ctx) {
         progresoParcial: { actual: n, requerido: valorReq }
       };
     }
-    /** Racha en días (logros_estudiante.racha_dias_actual). */
+
     case 'racha_dias': {
       const r = Number(ctx.rachaDiasActual) || 0;
       return {
@@ -240,10 +210,10 @@ async function evaluarCriterio(criterio, ctx) {
         progresoParcial: { actual: r, requerido: valorReq }
       };
     }
-    /** Pendiente de integrar con flujo de evaluaciones; no se desbloquea por progreso de actividades. */
+
     case 'evaluacion_perfecta':
       return { ok: false };
-    /** Solo aplica al alta (auth); insignia 14 se ignora en evaluarInsigniasTrasActividad. */
+
     case 'registro_nuevo':
       return { ok: false };
     default: {
@@ -368,12 +338,7 @@ async function actualizarProgresoParcial(estudianteIdNum, insigniaId, actual, re
   }
 }
 
-/**
- * @param {number} estudianteIdNum
- * @param {import('sequelize').Model} actividad - modelo Actividades
- * @param {boolean} completado - si en esta petición la actividad quedó completada
- * @returns {Promise<Array<{ insignia_id: number, nombre: string, descripcion: string, puntos_otorgados: number }>>}
- */
+
 async function evaluarInsigniasTrasActividad(estudianteIdNum, actividad, completado) {
   if (!actividad) {
     return [];
@@ -390,10 +355,7 @@ async function evaluarInsigniasTrasActividad(estudianteIdNum, actividad, complet
   return ejecutarEvaluacionInsignias(estudianteIdNum, ctx, origenId);
 }
 
-/**
- * Tras login/visita: evalúa criterios que no dependen de una actividad concreta en esta petición
- * (p. ej. racha de días, cantidad total). actividad origen en insignias_estudiante queda null.
- */
+
 async function evaluarInsigniasRachaTrasAcceso(estudianteIdNum) {
   const dummy = { id: 0, tipo_actividad_id: 1, grupo_edad_id: null };
   const ctx = await construirContextoInsignias(estudianteIdNum, dummy, false);
@@ -416,7 +378,7 @@ async function construirContextoInsignias(estudianteIdNum, actPlain, completado)
     where: { estudiante_id: estudianteIdNum },
     attributes: ['racha_dias_actual']
   });
-  /** Racha actual (días seguidos con acceso); no mezclar con máxima histórica para el umbral de insignia. */
+  
   const rachaDiasActual = logrosStreak ? Number(logrosStreak.racha_dias_actual) || 0 : 0;
 
   return {
@@ -447,7 +409,7 @@ async function ejecutarEvaluacionInsignias(estudianteIdNum, ctx, actividadOrigen
 
   for (const [insigniaId, criterios] of porInsignia.entries()) {
     if (insigniaId === 14) {
-      // Insignia de bienvenida: solo registro
+     
       continue;
     }
 

@@ -1,5 +1,3 @@
-// Archivo de prueba para las funcionalidades de administradores
-// Puedes usar este archivo como referencia para probar las APIs de administradores
 
 const ejemplosAdministradores = {
     // 1. Registrar un nuevo administrador
@@ -79,8 +77,8 @@ const ejemplosAdministradores = {
             nombre: "María Rodríguez",
             correo: "maria.rodriguez@neurokids.com",
             contrasena: "MariaAdmin123",
-            rol_id: 1, // 1 = Administrador
-            institucion_id: null // Puede ser null para administradores globales
+            rol_id: 1, 
+            institucion_id: null 
         },
         notas: "Requiere autenticación. Para crear administradores usar rol_id: 1"
     },
@@ -95,7 +93,6 @@ const ejemplosAdministradores = {
     }
 };
 
-// Flujo típico de registro e inicio de sesión para administradores
 const flujoRegistroLoginAdmin = [
     {
         paso: 1,
@@ -123,7 +120,7 @@ const flujoRegistroLoginAdmin = [
     }
 ];
 
-// Casos de error específicos para administradores
+
 const casosErrorAdmin = {
     correoYaExiste: {
         error: "Ya existe un usuario registrado con ese correo electrónico",
@@ -152,7 +149,7 @@ const casosErrorAdmin = {
     }
 };
 
-// Validaciones específicas para administradores
+
 const validacionesAdmin = {
     registro: [
         "Nombre, correo y contraseña son requeridos",
@@ -175,7 +172,7 @@ const validacionesAdmin = {
     ]
 };
 
-// Ejemplos de gestión de usuarios desde administrador
+
 const gestionUsuariosAdmin = {
     crearDocente: {
         url: 'POST /usuarios',
@@ -188,7 +185,7 @@ const gestionUsuariosAdmin = {
         }
     },
     crearEstudiante: {
-        url: 'POST /usuarios', // Si existe endpoint para estudiantes usuarios
+        url: 'POST /usuarios', 
         body: {
             nombre: "Pedro Estudiante",
             correo: "pedro.estudiante@escuela.edu",
@@ -204,7 +201,7 @@ const gestionUsuariosAdmin = {
     }
 };
 
-// Diferencias clave entre administradores y otros roles
+
 const diferenciaRoles = {
     administrador: {
         rol_id: 1,

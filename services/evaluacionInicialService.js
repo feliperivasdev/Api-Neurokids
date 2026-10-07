@@ -21,7 +21,7 @@ async function getTemasDisponibles(grupoEdadId) {
 }
 
 async function setupEvaluacionInicial({ estudiante_id, edad, tema }) {
-  // --- Validations OUTSIDE transaction (read-only) ---
+ 
   const estudiante = await Estudiantes.findByPk(estudiante_id);
   if (!estudiante) throw { status: 404, message: 'Estudiante no encontrado' };
 
@@ -50,7 +50,6 @@ async function setupEvaluacionInicial({ estudiante_id, edad, tema }) {
 
   const params = getParamsPorEdad(edadNum);
 
-  // --- IA call OUTSIDE transaction (cannot rollback external calls) ---
   let iaResult;
   try {
     iaResult = await generarLecturaConPreguntas({
@@ -68,7 +67,7 @@ async function setupEvaluacionInicial({ estudiante_id, edad, tema }) {
     throw { status: 502, message: 'Error al procesar respuesta de la IA', detalle: err.message };
   }
 
-  // Validar que iaResult tiene la estructura esperada
+  
   if (!iaResult || !iaResult.data) {
     throw { status: 502, message: 'Respuesta inválida de la IA: estructura incompleta' };
   }
@@ -79,7 +78,7 @@ async function setupEvaluacionInicial({ estudiante_id, edad, tema }) {
     process.env.IA_PROVIDER === 'gemini' ? 'gemini-1.5-flash' : 'claude-opus-4-5'
   );
 
-  // --- ALL DB writes inside a Sequelize transaction ---
+
   try {
     return await db.sequelize.transaction(async (t) => {
       const base = crypto.randomInt(1e13, 9e13);
@@ -197,7 +196,7 @@ async function responderEvaluacion({ resultado_evaluacion_id, respuestas, estudi
     throw { status: 403, message: 'No autorizado para responder esta evaluación' };
   }
 
-  // Fetch evaluacion to get the real numero_preguntas (Fix 6)
+
   const evaluacionInfo = await EvaluacionesIniciales.findByPk(resultado.evaluacion_id);
   const totalPreguntas = evaluacionInfo ? evaluacionInfo.numero_preguntas : 5;
 
@@ -210,7 +209,6 @@ async function responderEvaluacion({ resultado_evaluacion_id, respuestas, estudi
     const esCorrecta = opcion ? opcion.es_correcta === true : false;
     if (esCorrecta) correctas++;
 
-    // Insert directo para evitar problema con campo virtual 'estudiante_id'
     await db.sequelize.query(
       `INSERT INTO respuestas_estudiante 
        (id, resultado_evaluacion_id, pregunta_id, opcion_seleccionada_id, es_correcta, tiempo_respuesta, intentos, created_at, updated_at) 
@@ -269,7 +267,7 @@ async function verificarEvaluacionInicial(estudiante_id) {
     where: {
       estudiante_id,
       evaluacion_id: evaluaciones.map(e => e.id),
-      completado: false  // Solo mostrar si NO está completado
+      completado: false  
     }
   });
 

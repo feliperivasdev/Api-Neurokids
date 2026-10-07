@@ -6,8 +6,7 @@ const { verificarToken, verificarAdministrador } = require('../middleware/authMi
 // Todas las rutas de usuarios requieren autenticación
 router.use(verificarToken);
 
-// Rutas CRUD para usuarios
-// Seguridad: solo administradores pueden gestionar usuarios
+
 router.get('/', verificarAdministrador, usuariosController.obtenerUsuarios);
 router.get('/docentes', verificarAdministrador, usuariosController.obtenerDocentes);
 router.post('/docentes', verificarAdministrador, usuariosController.crearDocente);

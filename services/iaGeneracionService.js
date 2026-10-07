@@ -3,7 +3,7 @@ const axios = require('axios');
 const PROVIDER = process.env.IA_PROVIDER || 'claude';
 const MODEL = process.env.IA_MODEL;
 
-// Cargar múltiples API keys para fallback
+
 function cargarApiKeys() {
   const keys = [];
   const mainKey = process.env.IA_API_KEY;
@@ -178,22 +178,21 @@ async function llamarConFallback(prompt, providerFn) {
       ultimoError = err;
       console.warn(`[IA] Falló API key ${i + 1} (${keyMascarada}): ${err.message}`);
 
-      // Si es el último intento, lanzar el error
+
       if (i === API_KEYS.length - 1) {
         throw new Error(`Falló con todas las API keys. Último error: ${ultimoError.message}`);
       }
-      // Si no es el último, continuar al siguiente
+ 
     }
   }
 }
 
 function parsearRespuestaIA(texto) {
   try {
-    // Remove markdown code blocks
+
     let limpio = texto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
-    // Fix unescaped newlines inside JSON string values
-    // This regex finds quoted strings and replaces internal literal newlines with escaped \n
+
     limpio = limpio.replace(/"((?:[^"\\]|\\.)*)"/g, (match) => {
       return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     });

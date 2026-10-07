@@ -5,7 +5,6 @@ const Estudiante = db.estudiantes_model;
 const Usuario = db.usuarios_model;
 const Institucion = db.instituciones_model;
 const Rol = db.roles_model;
-// Modelos adicionales para logros e insignias
 const LogrosEstudiante = db.logros_estudiante_model;
 const InsigniasEstudiante = db.insignias_estudiante_model;
 const NotificacionesEstudiante = db.notificaciones_estudiante_model;
@@ -32,7 +31,7 @@ class AuthService {
         }
     }
 
-    // Obtener todas las instituciones activas
+    // Obtener todas las instituciones
     async getInstituciones() {
         try {
             const instituciones = await Institucion.findAll({
@@ -47,8 +46,8 @@ class AuthService {
         }
     }
 
-    // Iniciar sesión (solo para estudiantes ya registrados)
-    /** @param {{ ip?: string | null, userAgent?: string | null }} [meta] — para historial de accesos */
+    // Iniciar sesión 
+    
     async loginEstudiante(nombre, apellido, institucion_id, meta = {}) {
         try {
             const institucion = await Institucion.findByPk(institucion_id);
@@ -111,10 +110,7 @@ class AuthService {
         }
     }
 
-    /**
-     * Registra una visita al panel (sesión ya autenticada). Antiduplicado por ventana de tiempo
-     * para no llenar la tabla en cada refresco. Solo tokens de estudiante (sin `role` en el JWT).
-     */
+  
     async registrarVisitaEstudiante(estudianteId, meta = {}) {
         const id = Number(estudianteId);
         if (!Number.isFinite(id)) {
@@ -160,7 +156,7 @@ class AuthService {
         return { ok: true, registered: true };
     }
 
-    // Generar código de estudiante único
+  
     async generarCodigoEstudiante() {
         const timestamp = Date.now().toString().slice(-6);
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
@@ -174,7 +170,7 @@ class AuthService {
         return codigo;
     }
 
-    // Obtener o crear rol de estudiante
+  
     async obtenerRolEstudiante() {
         try {
             let rolEstudiante = await Rol.findOne({
@@ -234,7 +230,6 @@ class AuthService {
                 throw new Error('Ya existe un estudiante registrado con ese nombre y apellido en la institución seleccionada');
             }
 
-            // Validar correo único si se proporciona
             if (correo && correo.trim()) {
                 const correoExistente = await Estudiante.findOne({
                     where: {
@@ -247,7 +242,7 @@ class AuthService {
                 }
             }
 
-            // Validar documento único si se proporciona
+
             if (num_documento && num_documento.trim()) {
                 const documentoExistente = await Estudiante.findOne({
                     where: {
@@ -264,11 +259,11 @@ class AuthService {
             const codigo_estudiante = await this.generarCodigoEstudiante();
             const rol_id = await this.obtenerRolEstudiante();
 
-            // Usar una transacción para asegurar consistencia
+
             const transaction = await db.sequelize.transaction();
 
             try {
-                // Función para generar ID manual por falta de autoIncrement en modelos secundarios
+ 
                 const generateManualId = () => Math.floor(Date.now() + Math.random() * 1000);
 
                 // Crear el estudiante
@@ -285,7 +280,7 @@ class AuthService {
                     estado: 'true'
                 }, { transaction });
 
-                // --- Lógica de Logros, Insignias y Notificaciones ---
+
 
                 // Crear registro de logros
                 await LogrosEstudiante.create({
@@ -321,7 +316,7 @@ class AuthService {
                     created_at: new Date()
                 }, { transaction });
 
-                // Confirmar la transacción
+     
                 await transaction.commit();
 
                 // Generar token
@@ -346,7 +341,7 @@ class AuthService {
                 };
 
             } catch (transactionError) {
-                // Revertir la transacción en caso de error
+        
                 await transaction.rollback();
                 throw transactionError;
             }
@@ -383,7 +378,7 @@ class AuthService {
         return { message: 'Sesión cerrada exitosamente' };
     }
 
-    // ========== MÉTODOS PARA DOCENTES ==========
+
 
     // Generar JWT para docentes
     generateTokenDocente(docenteId) {
@@ -538,7 +533,7 @@ class AuthService {
             const docente = await Usuario.findOne({
                 where: {
                     id: docenteId,
-                    rol_id: 2, // Solo docentes
+                    rol_id: 2, 
                     estado: true
                 },
                 include: [
@@ -587,12 +582,12 @@ class AuthService {
 
             const datosParaActualizar = {};
 
-            // Actualizar nombre si se proporciona
+            // Actualizar nombre 
             if (nombre && nombre.trim()) {
                 datosParaActualizar.nombre = nombre.trim();
             }
 
-            // Actualizar correo si se proporciona
+            // Actualizar correo 
             if (correo && correo.trim()) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(correo.trim())) {
@@ -614,7 +609,7 @@ class AuthService {
                 datosParaActualizar.correo = correo.trim().toLowerCase();
             }
 
-            // Actualizar contraseña si se proporciona
+            // Actualizar contraseña 
             if (contrasena_nueva) {
                 if (!contrasena_actual) {
                     throw new Error('Se requiere la contraseña actual para cambiar la contraseña');
@@ -650,7 +645,7 @@ class AuthService {
         }
     }
 
-    // ========== MÉTODOS PARA ADMINISTRADORES ==========
+
 
     // Generar JWT para administradores
     generateTokenAdmin(adminId) {
@@ -682,7 +677,7 @@ class AuthService {
                 throw new Error('La contraseña debe tener al menos 6 caracteres');
             }
 
-            // Verificar institución si se proporciona
+            // Verificar institución 
             if (institucion_id) {
                 const institucion = await Institucion.findByPk(institucion_id);
                 if (!institucion) {
@@ -714,7 +709,7 @@ class AuthService {
                 email_verified_at: new Date() // Marcar como verificado automáticamente
             });
 
-            // Obtener institución si existe
+            // Obtener institución 
             const institucion = institucion_id ? await Institucion.findByPk(institucion_id) : null;
 
             // Generar token
@@ -752,7 +747,7 @@ class AuthService {
             const admin = await Usuario.findOne({
                 where: {
                     correo: correo.trim().toLowerCase(),
-                    rol_id: 1, // Solo administradores
+                    rol_id: 1, 
                     estado: true
                 },
                 include: [
@@ -804,7 +799,7 @@ class AuthService {
         }
     }
 
-    // Obtener datos del administrador actual
+    // Obtener datos del administrador 
     async getMeAdministrador(adminId) {
         try {
             const admin = await Usuario.findOne({
@@ -859,12 +854,12 @@ class AuthService {
 
             const datosParaActualizar = {};
 
-            // Actualizar nombre si se proporciona
+            // Actualizar nombre 
             if (nombre && nombre.trim()) {
                 datosParaActualizar.nombre = nombre.trim();
             }
 
-            // Actualizar correo si se proporciona
+            // Actualizar correo 
             if (correo && correo.trim()) {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(correo.trim())) {
@@ -886,7 +881,7 @@ class AuthService {
                 datosParaActualizar.correo = correo.trim().toLowerCase();
             }
 
-            // Actualizar contraseña si se proporciona
+            // Actualizar contraseña 
             if (contrasena_nueva) {
                 if (!contrasena_actual) {
                     throw new Error('Se requiere la contraseña actual para cambiar la contraseña');

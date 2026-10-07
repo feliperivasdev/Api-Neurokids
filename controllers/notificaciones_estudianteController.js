@@ -2,7 +2,7 @@ const db = require('../models');
 const NotificacionesEstudiante = db.notificaciones_estudiante_model;
 const Insignias = db.insignias_model;
 
-// Obtener notificaciones pendientes de un estudiante
+
 exports.getNotificacionesPendientes = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
@@ -50,7 +50,7 @@ exports.getNotificacionesPendientes = async (req, res) => {
     }
 };
 
-// Opción A: Marcar TODAS las pendientes de un estudiante como leídas
+
 exports.marcarTodasComoLeidas = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
@@ -81,7 +81,6 @@ exports.marcarTodasComoLeidas = async (req, res) => {
     }
 };
 
-// Opción B: Marcar solo la de "insignia" de bienvenida por estudiante_id
 exports.marcarInsigniaBienvenidaLeida = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
@@ -108,7 +107,7 @@ exports.marcarInsigniaBienvenidaLeida = async (req, res) => {
     }
 };
 
-/** Marca una notificación concreta como leída (cualquier tipo). */
+
 exports.marcarUnaComoLeida = async (req, res) => {
     try {
         const { estudiante_id, notificacion_id } = req.params;

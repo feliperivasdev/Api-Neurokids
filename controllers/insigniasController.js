@@ -1,7 +1,7 @@
 const db = require('../models');
 const Insignias = db.insignias_model;
 
-// Obtener una insignia específica por ID
+
 exports.getInsigniaById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -26,7 +26,6 @@ exports.getInsigniaById = async (req, res) => {
     }
 };
 
-// Obtener todas las insignias activas
 exports.getAllInsignias = async (req, res) => {
     try {
         const insignias = await Insignias.findAll({

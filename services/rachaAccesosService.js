@@ -1,16 +1,9 @@
-/**
- * Racha de días consecutivos según fechas de acceso (tabla accesos_plataforma_estudiante).
- * Sincroniza logros_estudiante.racha_dias_actual / racha_dias_maxima para insignias y reportes.
- */
+
 
 const db = require('../models');
 const AccesosPlataformaEstudiante = db.accesos_plataforma_estudiante_model;
 const LogrosEstudiante = db.logros_estudiante_model;
 
-/**
- * Días consecutivos con al menos un acceso, contando desde el día más reciente hacia atrás
- * (misma lógica que reportesController.calcularRachaDias con sesiones).
- */
 function calcularRachaDiasDesdeAccesos(fechaHoraRows) {
   const days = new Set();
   (fechaHoraRows || []).forEach((row) => {
@@ -36,10 +29,7 @@ function calcularRachaDiasDesdeAccesos(fechaHoraRows) {
   return streak;
 }
 
-/**
- * Recalcula la racha desde todos los accesos y persiste en logros_estudiante.
- * @returns {Promise<{ streak: number, racha_dias_maxima: number }>}
- */
+
 async function sincronizarRachaDesdeAccesos(estudianteIdNum) {
   const rows = await AccesosPlataformaEstudiante.findAll({
     where: { estudiante_id: estudianteIdNum },

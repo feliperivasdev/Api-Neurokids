@@ -17,7 +17,7 @@ function toNum(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Igual que en insignias_estudianteController */
+
 function insigniaDesbloqueada(reg) {
   if (!reg) return false;
   if (reg.completado === true) return true;
@@ -392,8 +392,7 @@ async function buildReporteDetalleData(estudiante_id, query) {
   };
 }
 
-// GET /reportes/estudiantes
-// Docente: solo su institución. Admin: todas o por query institucion_id
+
 exports.reporteEstudiantes = async (req, res) => {
   try {
     const { institucion_id: queryInstitucionId } = req.query;
@@ -517,7 +516,7 @@ exports.reporteEstudiantes = async (req, res) => {
   }
 };
 
-// GET /reportes/estudiantes/:estudiante_id/detalle
+
 exports.reporteDetalleEstudiante = async (req, res) => {
   try {
     const { estudiante_id } = req.params;
@@ -532,7 +531,6 @@ exports.reporteDetalleEstudiante = async (req, res) => {
   }
 };
 
-// GET /reportes/mi-detalle — token de estudiante (JWT sin campo `role`)
 exports.reporteMiDetalleEstudiante = async (req, res) => {
   try {
     const estudiante_id = req.usuario.id;
@@ -547,10 +545,9 @@ exports.reporteMiDetalleEstudiante = async (req, res) => {
   }
 };
 
-// GET /reportes/analisis-general
+
 exports.analisisGeneral = async (req, res) => {
   try {
-    // Calcular a partir de todos los estudiantes registrados, sin filtrar por institución.
     const estudiantes = await Estudiantes.findAll({
       attributes: ['id', 'nombre', 'apellido']
     });
@@ -584,7 +581,7 @@ exports.analisisGeneral = async (req, res) => {
       });
     }
 
-    // Obtener todos los progresos de actividades
+
     const progresos = await ProgresoActividades.findAll({
       where: { estudiante_id: idEstudiantes },
       include: [{
@@ -594,7 +591,7 @@ exports.analisisGeneral = async (req, res) => {
       }]
     });
 
-    // Obtener todos los progresos de lecturas por estudiante
+    
     const lecturasProgreso = await ProgresoLecturas.findAll({
       where: { estudiante_id: idEstudiantes },
       attributes: ['estudiante_id', 'completado'],
@@ -604,7 +601,7 @@ exports.analisisGeneral = async (req, res) => {
       lecturasProgreso.map((p) => Number(p.estudiante_id)).filter((id) => Number.isFinite(id))
     );
 
-    // Obtener todas las sesiones de actividad para el conjunto de estudiantes
+  
     const sesiones = await SesionesActividad.findAll({
       where: { estudiante_id: idEstudiantes },
       include: [{
@@ -709,7 +706,6 @@ exports.analisisGeneral = async (req, res) => {
       (a, b) => b.sesiones - a.sesiones
     );
 
-    // Rastrear por estudiante qué tipos de actividades usó
     const estudianteActividades = new Map();
     idEstudiantes.forEach(id => {
       estudianteActividades.set(id, {
@@ -718,7 +714,7 @@ exports.analisisGeneral = async (req, res) => {
       });
     });
 
-    // Agrupar por actividad
+
     const actividadesMap = new Map();
     progresos.forEach(p => {
       if (!p.actividad) return;
@@ -743,7 +739,7 @@ exports.analisisGeneral = async (req, res) => {
         act.usada_por.push(p.estudiante_id);
       }
 
-      // Marcar que el estudiante usó la actividad aunque no la haya completado
+    
       const estAct = estudianteActividades.get(p.estudiante_id);
       if (estAct) {
         if (p.actividad.tipo_actividad_id === 1) {
@@ -784,7 +780,7 @@ exports.analisisGeneral = async (req, res) => {
       });
     });
 
-    // Marcar uso de lecturas también desde progreso_lecturas separado
+  
     lecturasProgreso.forEach((p) => {
       const estAct = estudianteActividades.get(Number(p.estudiante_id));
       if (estAct) {
@@ -792,7 +788,7 @@ exports.analisisGeneral = async (req, res) => {
       }
     });
 
-    // Convertir a array y calcular estadísticas
+
     const actividadesDetalle = Array.from(actividadesMap.values()).map(act => ({
       id: act.id,
       nombre: act.nombre,
@@ -806,17 +802,17 @@ exports.analisisGeneral = async (req, res) => {
       porcentaje_completacion: Math.round((act.completada_por.length / idEstudiantes.length) * 100)
     }));
 
-    // Separar lecturas y juegos
+
     const lecturas = actividadesDetalle.filter(a => a.tipo === 'lectura');
     const juegos = actividadesDetalle.filter(a => a.tipo === 'juego');
 
-    // Contar completaciones por tipo
+    
     const completacionesLecturasFromActividades = lecturas.reduce((sum, l) => sum + l.estudiantes_completaron, 0);
     const completacionesJuegos = juegos.reduce((sum, j) => sum + j.estudiantes_completaron, 0);
     const completacionesLecturasFromLecturaProgreso = lecturasProgreso.filter((p) => p.completado).length;
     const completacionesLecturas = completacionesLecturasFromActividades + completacionesLecturasFromLecturaProgreso;
 
-    // Contar estudiantes por categoría de uso
+
     const estudiantesConLecturas = estudiantesLecturasSesionesSet.size;
     const estudiantesConJuegos = estudiantesJuegosSesionesSet.size;
     const estudiantesAmbos = [...estudiantesLecturasSesionesSet].filter((id) => estudiantesJuegosSesionesSet.has(id)).length;

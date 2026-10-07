@@ -6,11 +6,7 @@ const Estudiantes = db.estudiantes_model;
 const insigniasProgresoService = require('../services/insigniasProgresoService');
 const { mergeDetalleNiveles, puntuacionMaximaEsperada } = require('../services/detalleNivelesHelper');
 
-/**
- * Guardar o actualizar progreso de una actividad
- * POST /api/progreso-actividades
- * Acepta: respuestas_correctas, respuestas_incorrectas, uso_audio, nivel (para sesión)
- */
+
 exports.guardarProgreso = async (req, res) => {
     try {
         const {
@@ -32,7 +28,6 @@ exports.guardarProgreso = async (req, res) => {
         const estudianteIdNum = parseInt(estudiante_id, 10);
         const actividadIdNum = parseInt(actividad_id, 10);
 
-        // Validar datos requeridos
         if (!Number.isFinite(estudianteIdNum) || !Number.isFinite(actividadIdNum)) {
             return res.status(400).json({
                 success: false,
@@ -40,7 +35,7 @@ exports.guardarProgreso = async (req, res) => {
             });
         }
 
-        // Verificar que el estudiante existe
+   
         const estudiante = await Estudiantes.findByPk(estudianteIdNum);
         if (!estudiante) {
             return res.status(404).json({
@@ -49,7 +44,6 @@ exports.guardarProgreso = async (req, res) => {
             });
         }
 
-        // Verificar que la actividad existe
         const actividad = await Actividades.findByPk(actividadIdNum);
         if (!actividad) {
             return res.status(404).json({
@@ -58,7 +52,7 @@ exports.guardarProgreso = async (req, res) => {
             });
         }
 
-        // Buscar si ya existe progreso para esta actividad
+   
         let progreso = await ProgresoActividades.findOne({
             where: {
                 estudiante_id: estudianteIdNum,
@@ -75,7 +69,7 @@ exports.guardarProgreso = async (req, res) => {
 
         const maxPtsCatalogo = puntuacionMaximaEsperada(actividad);
         const { merged, totalScore, activityComplete } = mergeDetalleNiveles(progreso, req.body, actividad);
-        /** No perder completado por carrera (p. ej. solo_registro del nivel siguiente llega tras fin de nivel). */
+        
         const finalActivityComplete =
             Boolean(activityComplete) || Boolean(progreso && progreso.completado);
         let mergedOut = merged;
@@ -201,16 +195,13 @@ exports.guardarProgreso = async (req, res) => {
     }
 };
 
-/**
- * Obtener progreso de un estudiante en todas sus actividades
- * GET /api/progreso/estudiante/:estudiante_id
- */
+
 exports.getProgresoEstudiante = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
         const estudianteIdNum = parseInt(estudiante_id, 10);
 
-        // Verificar que el estudiante existe
+
         const estudiante = await Estudiantes.findByPk(estudianteIdNum);
         if (!estudiante) {
             return res.status(404).json({
@@ -219,7 +210,7 @@ exports.getProgresoEstudiante = async (req, res) => {
             });
         }
 
-        // Obtener progreso del estudiante
+
         const progreso = await ProgresoActividades.findAll({
             where: { estudiante_id: estudianteIdNum },
             include: [
@@ -232,7 +223,7 @@ exports.getProgresoEstudiante = async (req, res) => {
             order: [['ultima_interaccion', 'DESC']]
         });
 
-        // Calcular estadísticas
+
         const estadisticas = {
             total_actividades: progreso.length,
             completadas: progreso.filter(p => p.completado).length,
@@ -265,10 +256,7 @@ exports.getProgresoEstudiante = async (req, res) => {
     }
 };
 
-/**
- * Obtener progreso específico de una actividad para un estudiante
- * GET /api/progreso/actividad/:actividad_id/estudiante/:estudiante_id
- */
+
 exports.getProgresoActividad = async (req, res) => {
     try {
         const { actividad_id, estudiante_id } = req.params;
@@ -310,16 +298,13 @@ exports.getProgresoActividad = async (req, res) => {
     }
 };
 
-/**
- * Obtener resumen de progreso del estudiante (dashboard)
- * GET /api/progreso/resumen/:estudiante_id
- */
+
 exports.getResumenProgreso = async (req, res) => {
     try {
         const { estudiante_id } = req.params;
         const estudianteIdNum = parseInt(estudiante_id, 10);
 
-        // Verificar que el estudiante existe
+  
         const estudiante = await Estudiantes.findByPk(estudianteIdNum);
         if (!estudiante) {
             return res.status(404).json({
@@ -328,7 +313,6 @@ exports.getResumenProgreso = async (req, res) => {
             });
         }
 
-        // Obtener progreso del estudiante
         const progreso = await ProgresoActividades.findAll({
             where: { estudiante_id: estudianteIdNum },
             include: [
@@ -340,7 +324,6 @@ exports.getResumenProgreso = async (req, res) => {
             ]
         });
 
-        // Agrupar por grupo de edad
         const resumenPorEdad = {};
         progreso.forEach(p => {
             const grupoEdad = p.actividad?.grupo_edad_id || 'sin_clasificar';
@@ -358,7 +341,7 @@ exports.getResumenProgreso = async (req, res) => {
             resumenPorEdad[grupoEdad].tiempo_invertido += p.tiempo_total || 0;
         });
 
-        // Agrupar por tipo de actividad
+     
         const resumenPorTipo = {};
         progreso.forEach(p => {
             const tipoActividad = p.actividad?.tipo_actividad_id || 'sin_clasificar';
@@ -407,10 +390,7 @@ exports.getResumenProgreso = async (req, res) => {
     }
 };
 
-/**
- * Obtener actividades pendientes de un estudiante
- * GET /api/progreso/pendientes/:estudiante_id
- */
+
 exports.getActividadesPendientes = async (req, res) => {
     try {
         const { estudiante_id } = req.params;

@@ -82,7 +82,7 @@ exports.responder = async (req, res) => {
     const resultado = await responderEvaluacion({
       resultado_evaluacion_id: parseInt(resultado_evaluacion_id, 10),
       respuestas,
-      estudiante_id: req.usuario.id  // from JWT token
+      estudiante_id: req.usuario.id  
     });
 
     return res.status(200).json({ success: true, ...resultado });

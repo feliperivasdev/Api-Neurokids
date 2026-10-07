@@ -1,8 +1,3 @@
-/**
- * Fusiona `detalle_niveles` (JSON) con cada guardado de progreso.
- * - Juegos (tipo 2): hasta 3 niveles; puntos por nivel acumulables (suma en `puntuacion`).
- * - Lecturas (tipo 1): lectura en bloque (`completado: true`) o por niveles (1–3) como los juegos.
- */
 
 const MAX_LEVELS = 3;
 
@@ -57,12 +52,7 @@ function allGameLevelsDone(levelsCompleted) {
   return [1, 2, 3].every((l) => levelsCompleted.includes(l));
 }
 
-/**
- * @param {object|null} existingRow - instancia Sequelize o { detalle_niveles }
- * @param {object} body - req.body
- * @param {object} actividad - modelo Actividades
- * @returns {{ merged: object, totalScore: number, activityComplete: boolean }}
- */
+
 function mergeDetalleNiveles(existingRow, body, actividad) {
   const prev = normalize(readDetalleFromRow(existingRow));
   const rowCompletado =
@@ -79,7 +69,6 @@ function mergeDetalleNiveles(existingRow, body, actividad) {
   const soloRegistro = body.solo_registro === true || body.solo_registro === 'true';
   const nivelCompletado = body.nivel_completado === true || body.nivel_completado === 'true';
   const completadoCliente = body.completado === true || body.completado === 'true';
-  /** Compat: juegos antiguos enviaban solo `completado: true` al pasar cada nivel */
   const nivelCompletadoLegacy =
     tipoJuego && completadoCliente && !soloRegistro;
   const nivelCompletadoFlag = nivelCompletado || nivelCompletadoLegacy;
@@ -106,7 +95,6 @@ function mergeDetalleNiveles(existingRow, body, actividad) {
         activityComplete: true
       };
     }
-    /** Lectura por niveles (readingLevelFinished): acumula niveles como en juegos. */
     if (nivelCompletado) {
       prev.levelScores[nivel] = Math.max(Number(prev.levelScores[nivel] || 0), punt);
       if (!prev.levelsCompleted.includes(nivel)) {
@@ -128,7 +116,7 @@ function mergeDetalleNiveles(existingRow, body, actividad) {
     prev.lecturaSimple = false;
     if (soloRegistro) {
       prev.maxLevelReached = Math.max(prev.maxLevelReached || 0, nivel);
-      /** No bajar a no-completado si otra petición ya marcó la actividad (evita carrera con fin de nivel). */
+
       const complete =
         allGameLevelsDone(prev.levelsCompleted) || Boolean(rowCompletado);
       return {
@@ -156,7 +144,7 @@ function mergeDetalleNiveles(existingRow, body, actividad) {
     };
   }
 
-  /* Otros tipos: tratar como juego */
+
   prev.maxLevelReached = Math.max(prev.maxLevelReached || 0, nivel);
   return {
     merged: prev,

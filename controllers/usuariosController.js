@@ -19,7 +19,7 @@ async function getRolIdByNombre(nombreRol) {
     return match?.id || null;
 }
 
-// Obtener todos los usuarios (con paginación)
+// Obtener todos los usuarios
 exports.obtenerUsuarios = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
